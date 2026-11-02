@@ -274,7 +274,7 @@
       }
     }
     const streak = underStreak(state, now);
-    if (streak >= 2) out.push({ level: 'good', text: `Stayed within your daily limit ${streak} days in a row.` });
+    if (streak >= 2) out.push({ level: 'good', text: `Stayed within your daily limit ${streak} days in a row. Keep going!` });
     const gap = longestGapToday(state.entries, now);
     if (gap && gap.ms >= 60 * 60000) {
       out.push({

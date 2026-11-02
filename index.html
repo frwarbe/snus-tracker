@@ -4,148 +4,131 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Snus Tracker</title>
-  <meta name="theme-color" content="#1f2933">
+  <meta name="theme-color" content="#F7F5EC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#252522" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Snus">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <style>
-    /* Placeholder styling only: the real design comes later. */
-    :root { --bg: #fff; --fg: #1f2933; --muted: #6b7280; --line: #e5e7eb; --accent: #2563eb;
-            --bad: #dc2626; --warn: #d97706; --good: #16a34a; --card: #f9fafb; }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --accent: #60a5fa;
-              --bad: #f87171; --warn: #fbbf24; --good: #4ade80; --card: #1f2937; }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--fg);
-           font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    main { max-width: 560px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
-    section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 12px 0; }
-    h1 { font-size: 20px; margin: 4px 0 0; }
-    h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    button, input, select { font: inherit; color: inherit; }
-    select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
-    button { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-    button.primary { background: var(--accent); color: #fff; border: 0; }
-    button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-    input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-width: 0; }
-    .muted { color: var(--muted); }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .between { justify-content: space-between; }
-    .big { font-size: 40px; font-weight: 700; line-height: 1.1; }
-    .chip { border-radius: 999px; }
-    #log { width: 100%; font-size: 28px; font-weight: 700; padding: 18px; border-radius: 14px; margin: 12px 0 8px; }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li { padding: 6px 0; border-bottom: 1px solid var(--line); }
-    li:last-child { border-bottom: 0; }
-    .msg-bad { color: var(--bad); font-weight: 600; }
-    .msg-warn { color: var(--warn); font-weight: 600; }
-    .msg-good { color: var(--good); }
-    .over { color: var(--bad); }
-    .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 4px; }
-    .bar > span { display: block; height: 100%; background: var(--accent); }
-    .bar.over > span { background: var(--bad); }
-    .bar.near > span, .bar.at > span { background: var(--warn); }
-    svg { width: 100%; height: auto; display: block; }
-    label { display: block; margin: 6px 0; }
-    label input { width: 7em; }
-    .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
-             background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; max-width: 90vw; }
-  </style>
+  <link rel="preload" href="fonts/dm-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
-  <h1>Snus Tracker</h1>
+  <header class="top">
+    <div>
+      <h1>Snus Tracker</h1>
+      <p class="tagline">Track your lip pillows. Stay in control.</p>
+    </div>
+    <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings: limits and backup">
+      <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.6 7.6 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z"/></svg>
+    </button>
+  </header>
 
-  <section id="today">
-    <div class="row between">
-      <div>
-        <div class="muted">Today</div>
-        <div class="big" id="todayCount">0</div>
-      </div>
-      <div class="muted" id="lastPouch" style="text-align:right"></div>
+  <!-- Today -->
+  <section class="entry" aria-labelledby="hToday">
+    <h2 id="hToday">Today</h2>
+    <div class="count-wrap">
+      <div class="count" id="todayCount" aria-live="polite">0</div>
+      <div class="count-note" id="countNote"></div>
     </div>
-    <div class="row" style="margin-top:12px">
-      <label for="logTime" style="margin:0">Time</label>
-      <input type="time" id="logTime">
-      <button id="nowBtn" type="button">Now</button>
-      <span class="muted" id="logTimeNote"></span>
+    <p class="last" id="lastPouch"></p>
+
+    <div class="time-row">
+      <label for="logTime">Time:</label>
+      <input type="time" id="logTime" class="field">
+      <span class="pencil" id="logTimeNote"></span>
+      <button id="nowBtn" type="button" class="btn small">Now</button>
     </div>
-    <button id="log" class="primary">+1 lip pillow</button>
-    <div class="row"><button id="undo">Undo last</button></div>
-    <div id="activityAsk" hidden style="margin-top:12px">
-      <div class="muted" id="activityAskLabel">What were you doing? (optional)</div>
-      <div class="row" id="activityChips" style="margin-top:6px"></div>
-      <div class="row" id="otherRow" hidden style="margin-top:6px">
-        <input id="otherText" maxlength="60" placeholder="What were you doing?" aria-label="Other activity">
-        <button id="otherSave">Save</button>
-      </div>
+
+    <button id="log" class="btn primary" type="button">+1 lip pillow</button>
+    <button id="undo" class="btn secondary" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 7 4.5 11 9 15"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5 11h9.5a5 5 0 0 1 0 10H12"/></svg>
+      Undo last
+    </button>
+
+    <div id="activityAsk" class="ask" hidden>
+      <p class="ask-label"><strong>What were you doing?</strong> <span class="pencil">(optional)</span></p>
+      <div class="chips" id="activityChips"></div>
     </div>
+
+    <ul class="notes" id="feedback" aria-live="polite"></ul>
   </section>
 
-  <section id="feedbackBox">
-    <h2>Feedback</h2>
-    <ul id="feedback"></ul>
-  </section>
-
-  <section>
-    <h2>Progress</h2>
+  <!-- Progress -->
+  <section class="entry" aria-labelledby="hProgress">
+    <h2 id="hProgress">Progress</h2>
     <div id="progress"></div>
   </section>
 
-  <section>
-    <h2>Today's lip pillows</h2>
-    <ul id="todayList"></ul>
+  <!-- Today's list -->
+  <section class="entry" aria-labelledby="hList">
+    <h2 id="hList">Today's lip pillows</h2>
+    <ul class="ruled" id="todayList"></ul>
   </section>
 
-  <section>
-    <div class="row between"><h2>Trend</h2>
-      <div class="row" id="ranges">
-        <button data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button>
-      </div>
+  <!-- Trend -->
+  <section class="entry" aria-labelledby="hTrend">
+    <h2 id="hTrend">Trend <span class="h-sub">· lip pillows per day</span></h2>
+    <div class="seg" id="ranges" role="group" aria-label="Range">
+      <button type="button" data-days="7">7 days</button>
+      <button type="button" data-days="30">30 days</button>
+      <button type="button" data-days="90">90 days</button>
     </div>
     <div id="chart"></div>
-    <div class="muted" id="chartNote"></div>
+    <p class="pencil small-text" id="chartNote"></p>
   </section>
 
-  <section>
-    <h2>What you were doing (last 30 days)</h2>
-    <div id="activities"></div>
+  <!-- Activities -->
+  <section class="entry" aria-labelledby="hAct">
+    <h2 id="hAct">What you were doing <span class="h-sub">· last 30 days</span></h2>
+    <div class="cols" id="activities"></div>
   </section>
 
-  <section>
-    <h2>Time of day (last 30 days)</h2>
-    <div id="timeOfDay"></div>
+  <!-- Time of day -->
+  <section class="entry" aria-labelledby="hTod">
+    <h2 id="hTod">Time of day <span class="h-sub">· last 30 days</span></h2>
+    <div class="cols" id="timeOfDay"></div>
   </section>
 
-  <section>
-    <h2>History</h2>
-    <ul id="history"></ul>
+  <!-- History -->
+  <section class="entry" aria-labelledby="hHist">
+    <h2 id="hHist">History <span class="h-sub">· last 30 days</span></h2>
+    <ul class="ruled" id="history"></ul>
+    <button type="button" class="link-btn" id="moreHistory" hidden>Show more</button>
   </section>
 
-  <section>
-    <h2>Limits</h2>
-    <form id="limits">
-      <label>Daily <input type="number" id="limDaily" min="0" inputmode="numeric" placeholder="none"></label>
-      <label>Weekly <input type="number" id="limWeekly" min="0" inputmode="numeric"> <span class="muted" id="limWeeklyHint"></span></label>
-      <label>Monthly <input type="number" id="limMonthly" min="0" inputmode="numeric"> <span class="muted" id="limMonthlyHint"></span></label>
-      <div class="muted">Leave weekly or monthly empty to work them out from the daily limit.</div>
-      <div class="muted">Changes apply straight away.</div>
+  <!-- Settings -->
+  <section class="entry" id="settings" aria-labelledby="hLimits">
+    <h2 id="hLimits">Limits</h2>
+    <form id="limits" class="limits">
+      <label for="limDaily">Daily</label>
+      <input type="number" id="limDaily" class="field" min="0" inputmode="numeric" placeholder="none">
+      <span class="pencil" id="limDailyHint"></span>
+
+      <label for="limWeekly">Weekly</label>
+      <input type="number" id="limWeekly" class="field" min="0" inputmode="numeric">
+      <span class="pencil" id="limWeeklyHint"></span>
+
+      <label for="limMonthly">Monthly</label>
+      <input type="number" id="limMonthly" class="field" min="0" inputmode="numeric">
+      <span class="pencil" id="limMonthlyHint"></span>
     </form>
+    <p class="pencil small-text">Changes apply straight away. Leave weekly or monthly empty to work them out from your daily limit.</p>
   </section>
 
-  <section>
-    <h2>Backup</h2>
-    <div class="row">
-      <button id="export">Export</button>
-      <button id="importBtn">Import</button>
-      <input type="file" id="importFile" accept="application/json,.json" hidden>
-      <button id="clear">Delete all data</button>
+  <section class="entry" aria-labelledby="hBackup">
+    <h2 id="hBackup">Backup</h2>
+    <div class="btn-row">
+      <button id="export" class="btn small" type="button">Export</button>
+      <button id="importBtn" class="btn small" type="button">Import</button>
+      <button id="clear" class="btn small danger" type="button">Delete all data</button>
     </div>
-    <div class="muted" style="margin-top:8px">Your data is stored only on this device.</div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="pencil small-text">Your data is stored only on this device.</p>
   </section>
 </main>
 
