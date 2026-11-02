@@ -12,6 +12,9 @@ A standalone tracker for lip pillows (nicotine pouches). No AI, no server, no ac
 - **History:** the last 30 days, each marked as within the limit or over it.
 - **Backup:** export to a file and import it on another device.
 
+## Look
+Clean and calm: DM Sans on warm paper colours, with a charcoal dark mode that follows your phone's setting. Red is used only when you're over a limit. The font is bundled, so it works offline.
+
 ## Use it
 - **On your phone:** open the hosted page (e.g. GitHub Pages), then use Share → **Add to Home Screen** (iPhone) or menu → **Install app** (Android). It then opens like an app and works offline.
 - **On a computer:** open `index.html` in a browser, or run `npm start` and visit the address it prints.
@@ -20,6 +23,8 @@ Data is stored in the browser you use, so each device has its own copy. Use Expo
 
 ## Files
 - `index.html`: the page
+- `style.css`: the design
+- `fonts/`: DM Sans (SIL Open Font License)
 - `logic.js`: all the counting, limits and feedback (no DOM, tested)
 - `app.js`: connects the page to the logic
 - `sw.js`, `manifest.webmanifest`, `icon*`: offline support and home-screen install
