@@ -287,6 +287,17 @@
     const otherCount = custom.reduce((a, r) => a + r.count, 0);
     rows = [...std.map((r) => ({ ...r, name: r.name === 'Studying/Working' ? 'Study / Work' : r.name })), { name: 'Other', count: otherCount }];
     columns('activities', rows, 'Nothing tagged yet');
+
+    // What "Other" was made of, e.g. "At the gym 60%".
+    const others = L.otherBreakdown(state.entries, now, 30);
+    $('otherList').hidden = others.length === 0;
+    $('otherList').replaceChildren(
+      el('p', { className: 'other-title', textContent: 'Other' }),
+      ...others.map((r) =>
+        el('div', { className: 'other-row' },
+          el('span', { className: 'other-name', textContent: r.name }),
+          el('span', { className: 'other-pct', textContent: `${r.pct}%` })))
+    );
   }
 
   function renderTimeOfDay(now) {

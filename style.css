@@ -312,6 +312,12 @@ input[type=time].field { width: 8.5em; }
 }
 .col-labels { display: flex; gap: 12px; margin-top: 6px; }
 .col-labels span { flex: 1; min-width: 0; text-align: center; font-size: 12.5px; color: var(--graphite); overflow-wrap: anywhere; line-height: 1.2; }
+.other-list { margin-top: 14px; }
+.other-title { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--pencil); text-transform: uppercase; letter-spacing: 0.04em; }
+.other-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--light-pencil); font-size: 14px; color: var(--graphite); }
+.other-row:last-child { border-bottom: 0; }
+.other-name { min-width: 0; overflow-wrap: anywhere; }
+.other-pct { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .empty-chart { color: var(--pencil); align-self: center; margin: auto; }
 
 /* ---- Limits ---- */

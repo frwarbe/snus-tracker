@@ -103,6 +103,22 @@
     return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }
 
+  // Your own "Other" answers over the last `days` days, biggest first, with their share of
+  // all "Other" answers. Spelling/case differences ("gym" vs "Gym") count as the same answer.
+  function otherBreakdown(entries, now, days) {
+    const groups = new Map();
+    for (const r of activityBreakdown(entries, now, days)) {
+      if (r.name === 'Not set' || ACTIVITIES.includes(r.name)) continue;
+      const key = r.name.toLowerCase();
+      const g = groups.get(key) || { name: r.name, count: 0 };
+      g.count += r.count;
+      groups.set(key, g);
+    }
+    const rows = [...groups.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const total = rows.reduce((a, r) => a + r.count, 0);
+    return rows.map((r) => ({ ...r, pct: total ? Math.round((r.count / total) * 100) : 0 }));
+  }
+
   function removeEntry(state, id) {
     return { ...state, entries: state.entries.filter((e) => e.id !== id) };
   }
@@ -301,6 +317,7 @@
     cleanActivity,
     setEntryActivity,
     activityBreakdown,
+    otherBreakdown,
     toLimit,
     addEntry,
     removeEntry,

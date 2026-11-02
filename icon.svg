@@ -1,5 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#1f2933"/>
-  <rect x="136" y="186" width="240" height="140" rx="56" fill="#f3f4f6"/>
-  <path d="M176 256h160" stroke="#1f2933" stroke-width="14" stroke-linecap="round" opacity=".25"/>
+  <!-- Background: the app's charcoal -->
+  <rect width="512" height="512" fill="#252522"/>
+  <!-- Soft shadow under the tin -->
+  <ellipse cx="262" cy="350" rx="176" ry="58" fill="#000" opacity=".28"/>
+  <!-- Tin side (cylinder wall) -->
+  <path d="M92 236v58a164 122 0 0 0 328 0v-58Z" fill="#DDD8CB"/>
+  <!-- Red accent band on the side -->
+  <path d="M300 411.5A164 122 0 0 0 420 294V236A164 122 0 0 1 300 353.5Z" fill="#C95D50"/>
+  <!-- Side shading -->
+  <path d="M92 236v58a164 122 0 0 0 328 0v-58a164 122 0 0 1-328 0Z" fill="url(#side)"/>
+  <!-- Lid -->
+  <ellipse cx="256" cy="236" rx="164" ry="122" fill="#F7F5EC"/>
+  <ellipse cx="256" cy="236" rx="164" ry="122" fill="none" stroke="#CFC9BA" stroke-width="3"/>
+  <!-- Inner ring of the lid -->
+  <ellipse cx="256" cy="232" rx="134" ry="98" fill="none" stroke="#DCD6C8" stroke-width="5"/>
+  <!-- Strength dots -->
+  <g transform="translate(256 236) scale(1 .74)">
+    <circle cx="-54" cy="0" r="15" fill="#C95D50"/>
+    <circle cx="-18" cy="0" r="15" fill="#C95D50"/>
+    <circle cx="18" cy="0" r="15" fill="#C95D50"/>
+    <circle cx="54" cy="0" r="15" fill="#D8D2C5"/>
+  </g>
+  <defs>
+    <linearGradient id="side" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".16"/>
+      <stop offset=".45" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".22"/>
+    </linearGradient>
+  </defs>
 </svg>

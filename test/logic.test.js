@@ -141,3 +141,18 @@ test('activity breakdown and import keep activities', () => {
   assert.equal(back.entries[0].activity, 'Outside');
   assert.equal(L.normalize({ entries: [{ t: 1, activity: 42 }] }).entries[0].activity, undefined);
 });
+
+test('other breakdown groups your own answers with percentages', () => {
+  let s = withEntries([8, 9, 10, 11, 12, 13].map((h) => at(2026, 11, 4, h)));
+  const ids = s.entries.map((e) => e.id);
+  s = L.setEntryActivity(s, ids[0], 'At the gym');
+  s = L.setEntryActivity(s, ids[1], 'at the gym');
+  s = L.setEntryActivity(s, ids[2], 'At the gym');
+  s = L.setEntryActivity(s, ids[3], 'Gaming');
+  s = L.setEntryActivity(s, ids[4], 'Outside'); // standard answer: not part of Other
+  assert.deepEqual(L.otherBreakdown(s.entries, new Date(2026, 10, 4, 20), 30), [
+    { name: 'At the gym', count: 3, pct: 75 },
+    { name: 'Gaming', count: 1, pct: 25 },
+  ]);
+  assert.deepEqual(L.otherBreakdown([], new Date(2026, 10, 4, 20), 30), []);
+});
