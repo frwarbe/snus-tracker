@@ -74,7 +74,7 @@ test('streak counts days within the limit back from yesterday', () => {
   );
   // Nov 6 is over (3), Nov 7-9 within -> 3.
   assert.equal(L.underStreak(s, now), 3);
-  assert.ok(L.feedback(s, now).some((m) => m.text === 'Stayed within your daily limit 3 days in a row.'));
+  assert.ok(L.feedback(s, now).some((m) => m.text === 'Stayed within your daily limit 3 days in a row. Keep going!'));
 });
 
 test('longest gap today, including the gap since the last lip pillow', () => {

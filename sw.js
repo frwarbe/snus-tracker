@@ -1,7 +1,9 @@
 // Offline support. Always tries the network first so new versions show up straight away,
 // and falls back to the saved copy when there's no connection.
-const CACHE = 'snus-tracker-v3';
-const FILES = ['./', 'index.html', 'logic.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'snus-tracker-v4';
+const FILES = ['./', 'index.html', 'style.css', 'logic.js', 'app.js',
+  'fonts/patrick-hand-latin-400-normal.woff2', 'fonts/roboto-latin-400-normal.woff2',
+  'fonts/roboto-latin-500-normal.woff2', 'fonts/roboto-latin-700-normal.woff2', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
