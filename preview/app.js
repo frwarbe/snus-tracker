@@ -58,7 +58,7 @@
     if (message) toast(message);
   }
 
-  // ---- Small inline icons (hand-drawn feel, stroke only) ----
+  // ---- Small inline icons ----
   const ICONS = {
     info: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 10.6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.2" fill="currentColor"/></svg>',
     alert: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 6.8v6.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.9" r="1.3" fill="currentColor"/></svg>',
@@ -187,16 +187,10 @@
     const css = getComputedStyle(document.documentElement);
     const c = (name) => css.getPropertyValue(name).trim();
 
-    // A slight wobble so lines look drawn by hand.
-    const defs = add('defs', {});
-    const f = add('filter', { id: 'rough', x: '-5%', y: '-5%', width: '110%', height: '110%' }, null, defs);
-    add('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.04', numOctaves: '2', seed: '7', result: 'n' }, null, f);
-    add('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: '2.2' }, null, f);
-
     // Grid and y labels
     for (let v = 0; v <= max; v += step) {
       add('line', { x1: padL, x2: W - padR, y1: y(v), y2: y(v), stroke: c('--light-pencil'), 'stroke-width': v === 0 ? 1.5 : 0.7, opacity: v === 0 ? 1 : 0.6 });
-      add('text', { x: padL - 7, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: c('--pencil'), 'font-family': 'Roboto, sans-serif' }, v);
+      add('text', { x: padL - 7, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: c('--pencil'), 'font-family': 'DM Sans, sans-serif' }, v);
     }
     // x labels
     const every = n <= 7 ? 1 : Math.ceil(n / 5);
@@ -206,17 +200,16 @@
       const label = n <= 7
         ? d.date.toLocaleDateString([], { weekday: 'short' })
         : d.date.toLocaleDateString([], { day: 'numeric', month: 'short' });
-      add('text', { x: x(i), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: c('--graphite'), 'font-family': 'Roboto, sans-serif' }, label);
+      add('text', { x: x(i), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: c('--graphite'), 'font-family': 'DM Sans, sans-serif' }, label);
     });
     // Limit line
     if (limit != null) {
       add('line', { x1: padL, x2: W - padR, y1: y(limit), y2: y(limit), stroke: c('--red'), 'stroke-width': 1.5, 'stroke-dasharray': '6 5', opacity: 0.85 });
-      add('text', { x: W - padR, y: y(limit) - 5, 'text-anchor': 'end', 'font-size': 14, fill: c('--red'), 'font-family': 'Patrick Hand, cursive' }, 'your limit');
+      add('text', { x: W - padR, y: y(limit) - 5, 'text-anchor': 'end', 'font-size': 12, 'font-weight': 600, fill: c('--red'), 'font-family': 'DM Sans, sans-serif' }, 'limit');
     }
-    // Trend line: a faint second stroke makes it look like pencil.
+    // Trend line
     const pts = series.map((d, i) => `${x(i)},${y(d.count)}`).join(' ');
-    add('polyline', { points: pts, fill: 'none', stroke: c('--graphite'), 'stroke-width': 1, opacity: 0.35, transform: 'translate(0.8 1)', filter: 'url(#rough)' });
-    add('polyline', { points: pts, fill: 'none', stroke: c('--ink'), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', filter: 'url(#rough)' });
+    add('polyline', { points: pts, fill: 'none', stroke: c('--ink'), 'stroke-width': 2.2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
     const r = n > 45 ? 2.2 : n > 14 ? 3 : 4.2;
     series.forEach((d, i) => {
       const over = limit != null && d.count > limit;
