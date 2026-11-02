@@ -278,26 +278,48 @@
     box.setAttribute('aria-label', rows.map((r) => `${r.name}: ${r.count}`).join(', '));
   }
 
-  function renderActivities(now) {
-    let rows = L.activityBreakdown(state.entries, now, 30);
-    // Fixed order for the standard answers, then your own ones; keep it to 5 columns.
-    const order = [...L.ACTIVITIES];
-    const std = order.map((name) => rows.find((r) => r.name === name) || { name, count: 0 });
-    const custom = rows.filter((r) => !order.includes(r.name) && r.name !== 'Not set');
-    const otherCount = custom.reduce((a, r) => a + r.count, 0);
-    rows = [...std.map((r) => ({ ...r, name: r.name === 'Studying/Working' ? 'Study / Work' : r.name })), { name: 'Other', count: otherCount }];
-    columns('activities', rows, 'Nothing tagged yet');
+  const MOSTLY = { morning: 'Mostly mornings', afternoon: 'Mostly afternoons', evening: 'Mostly evenings', night: 'Mostly at night' };
+  function fmtLast(t) {
+    const day = L.startOfDay(new Date());
+    if (t >= +day) return `today ${fmtTime(t)}`;
+    if (t >= +L.addDays(day, -1)) return `yesterday ${fmtTime(t)}`;
+    return new Date(t).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+  }
 
-    // What "Other" was made of, e.g. "At the gym 60%".
-    const others = L.otherBreakdown(state.entries, now, 30);
-    $('otherList').hidden = others.length === 0;
-    $('otherList').replaceChildren(
-      el('p', { className: 'other-title', textContent: 'Other' }),
-      ...others.map((r) =>
-        el('div', { className: 'other-row' },
-          el('span', { className: 'other-name', textContent: r.name }),
-          el('span', { className: 'other-pct', textContent: `${r.pct}%` })))
-    );
+  function renderActivities(now) {
+    const st = L.activityStats(state.entries, now, 30);
+    const by = Object.fromEntries(st.rows.map((r) => [r.name, r]));
+    const short = (n) => (n === 'Studying/Working' ? 'Study / Work' : n);
+    columns('activities', [...L.ACTIVITIES, 'Other'].map((n) => ({ name: short(n), count: by[n].count })), 'Nothing tagged yet');
+
+    // Full breakdown: every answer with its count and share; your own answers sit under Other.
+    const box = $('breakdown');
+    box.hidden = st.tagged === 0;
+    if (!st.tagged) return box.replaceChildren();
+    const row = (r, child) => {
+      const bar = el('div', { className: 'bd-bar' }, el('span'));
+      bar.firstChild.style.width = `${r.pct}%`;
+      return el('div', { className: 'bd-row' + (child ? ' child' : '') + (r.count ? '' : ' zero') },
+        el('div', { className: 'bd-main' },
+          el('span', { className: 'bd-name', textContent: r.name }),
+          el('span', { className: 'bd-nums' },
+            el('span', { className: 'bd-count', textContent: `${r.count}` }),
+            el('span', { className: 'bd-pct', textContent: `${r.pct}%` }))),
+        bar,
+        r.count ? el('div', { className: 'bd-sub', textContent: `${MOSTLY[r.mostly]} · last ${fmtLast(r.last)}` }) : '');
+    };
+    const out = [];
+    for (const r of st.rows) {
+      if (r.name === 'Other' && !r.count) continue;
+      out.push(row(r, false));
+      for (const c of r.children || []) out.push(row(c, true));
+    }
+    const foot = `Based on ${st.tagged} tagged lip pillow${st.tagged === 1 ? '' : 's'}` +
+      (st.untagged ? ` · ${st.untagged} not tagged` : '');
+    box.replaceChildren(
+      el('div', { className: 'bd-head' }, el('span', { textContent: 'Breakdown' }), el('span', { textContent: 'count · share' })),
+      ...out,
+      el('p', { className: 'bd-foot', textContent: foot }));
   }
 
   function renderTimeOfDay(now) {

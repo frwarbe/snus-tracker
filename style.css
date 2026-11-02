@@ -312,12 +312,23 @@ input[type=time].field { width: 8.5em; }
 }
 .col-labels { display: flex; gap: 12px; margin-top: 6px; }
 .col-labels span { flex: 1; min-width: 0; text-align: center; font-size: 12.5px; color: var(--graphite); overflow-wrap: anywhere; line-height: 1.2; }
-.other-list { margin-top: 14px; }
-.other-title { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--pencil); text-transform: uppercase; letter-spacing: 0.04em; }
-.other-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--light-pencil); font-size: 14px; color: var(--graphite); }
-.other-row:last-child { border-bottom: 0; }
-.other-name { min-width: 0; overflow-wrap: anywhere; }
-.other-pct { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.breakdown { margin-top: 18px; }
+.bd-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--pencil); text-transform: uppercase; letter-spacing: 0.04em; padding-bottom: 6px; border-bottom: 1px solid var(--light-pencil); }
+.bd-row { padding: 10px 0; border-bottom: 1px solid var(--light-pencil); }
+.bd-row.child { padding: 7px 0 7px 14px; margin-left: 4px; border-left: 2px solid var(--light-pencil); border-bottom: 0; }
+.bd-row.child + .bd-row:not(.child) { border-top: 1px solid var(--light-pencil); }
+.bd-row.zero { color: var(--pencil); }
+.bd-main { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.bd-name { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.bd-row.child .bd-name { font-weight: 400; font-size: 14px; }
+.bd-nums { display: flex; gap: 14px; font-variant-numeric: tabular-nums; flex: none; }
+.bd-count { color: var(--pencil); min-width: 2ch; text-align: right; }
+.bd-pct { font-weight: 600; min-width: 4ch; text-align: right; }
+.bd-bar { height: 4px; margin-top: 6px; border-radius: 2px; background: var(--paper-dark); overflow: hidden; }
+.bd-bar > span { display: block; height: 100%; background: var(--graphite); border-radius: 2px; }
+.bd-row.child .bd-bar > span { background: var(--light-pencil); }
+.bd-sub { margin-top: 4px; font-size: 12.5px; color: var(--pencil); }
+.bd-foot { margin: 10px 0 0; font-size: 12.5px; color: var(--pencil); }
 .empty-chart { color: var(--pencil); align-self: center; margin: auto; }
 
 /* ---- Limits ---- */

@@ -142,17 +142,33 @@ test('activity breakdown and import keep activities', () => {
   assert.equal(L.normalize({ entries: [{ t: 1, activity: 42 }] }).entries[0].activity, undefined);
 });
 
-test('other breakdown groups your own answers with percentages', () => {
-  let s = withEntries([8, 9, 10, 11, 12, 13].map((h) => at(2026, 11, 4, h)));
+test('full activity breakdown adds up to 100% with Other split into your own answers', () => {
+  let s = withEntries([7, 8, 9, 13, 14, 15, 19, 20].map((h) => at(2026, 11, 4, h)));
   const ids = s.entries.map((e) => e.id);
-  s = L.setEntryActivity(s, ids[0], 'At the gym');
-  s = L.setEntryActivity(s, ids[1], 'at the gym');
-  s = L.setEntryActivity(s, ids[2], 'At the gym');
-  s = L.setEntryActivity(s, ids[3], 'Gaming');
-  s = L.setEntryActivity(s, ids[4], 'Outside'); // standard answer: not part of Other
-  assert.deepEqual(L.otherBreakdown(s.entries, new Date(2026, 10, 4, 20), 30), [
-    { name: 'At the gym', count: 3, pct: 75 },
-    { name: 'Gaming', count: 1, pct: 25 },
-  ]);
-  assert.deepEqual(L.otherBreakdown([], new Date(2026, 10, 4, 20), 30), []);
+  const tag = (i, a) => { s = L.setEntryActivity(s, ids[i], a); };
+  tag(0, 'Studying/Working'); tag(1, 'Studying/Working'); tag(2, 'Studying/Working');
+  tag(3, 'At the gym'); tag(4, 'at the gym'); tag(5, 'Gaming');
+  tag(6, 'Outside'); // ids[7] stays untagged
+  const st = L.activityStats(s.entries, new Date(2026, 10, 4, 22), 30);
+  assert.equal(st.total, 8);
+  assert.equal(st.tagged, 7);
+  assert.equal(st.untagged, 1);
+  const by = Object.fromEntries(st.rows.map((r) => [r.name, r]));
+  assert.equal(by['Studying/Working'].count, 3);
+  assert.equal(by['Studying/Working'].mostly, 'morning');
+  assert.equal(by.Other.count, 3);
+  assert.equal(by.Other.mostly, 'afternoon');
+  assert.deepEqual(by.Other.children.map((c) => [c.name, c.count]), [['At the gym', 2], ['Gaming', 1]]);
+  assert.equal(by.Other.pct, by.Other.children.reduce((a, c) => a + c.pct, 0));
+  const total = st.rows.filter((r) => r.name !== 'Other').reduce((a, r) => a + r.pct, 0) + by.Other.pct;
+  assert.equal(total, 100);
+  assert.equal(by.Drinking.count, 0);
+  assert.equal(by.Drinking.mostly, null);
+  assert.equal(by.Outside.last, at(2026, 11, 4, 19));
+});
+
+test('shares always add up to 100', () => {
+  assert.deepEqual(L.sharesOf([1, 1, 1]), [34, 33, 33]);
+  assert.deepEqual(L.sharesOf([0, 0]), [0, 0]);
+  assert.equal(L.sharesOf([3, 7, 11, 13, 2]).reduce((a, n) => a + n, 0), 100);
 });

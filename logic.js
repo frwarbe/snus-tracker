@@ -103,20 +103,61 @@
     return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }
 
-  // Your own "Other" answers over the last `days` days, biggest first, with their share of
-  // all "Other" answers. Spelling/case differences ("gym" vs "Gym") count as the same answer.
-  function otherBreakdown(entries, now, days) {
-    const groups = new Map();
-    for (const r of activityBreakdown(entries, now, days)) {
-      if (r.name === 'Not set' || ACTIVITIES.includes(r.name)) continue;
-      const key = r.name.toLowerCase();
-      const g = groups.get(key) || { name: r.name, count: 0 };
-      g.count += r.count;
-      groups.set(key, g);
+  // Rounds shares to whole percentages that add up to exactly 100 (largest remainder).
+  function sharesOf(counts) {
+    const total = counts.reduce((a, n) => a + n, 0);
+    if (!total) return counts.map(() => 0);
+    const raw = counts.map((n) => (n / total) * 100);
+    const out = raw.map(Math.floor);
+    let left = 100 - out.reduce((a, n) => a + n, 0);
+    raw.map((r, i) => [r - Math.floor(r), i]).sort((x, y) => y[0] - x[0] || x[1] - y[1])
+      .forEach(([, i]) => { if (left > 0) { out[i] += 1; left -= 1; } });
+    return out;
+  }
+
+  // Full breakdown of what you were doing over the last `days` days. Every tagged lip pillow is
+  // counted once: the standard answers, plus "Other" which holds your own answers as children.
+  // Percentages are of all tagged lip pillows and add up to 100; children add up to Other's share.
+  // Spelling/case differences in your own answers ("gym" vs "Gym") count as the same answer.
+  function activityStats(entries, now, days) {
+    const from = addDays(startOfDay(now), -(days - 1));
+    const list = entriesBetween(entries, from, addDays(startOfDay(now), 1));
+    const make = (name) => ({ name, count: 0, last: null, buckets: { morning: 0, afternoon: 0, evening: 0, night: 0 } });
+    const std = new Map(ACTIVITIES.map((n) => [n, make(n)]));
+    const custom = new Map();
+    let untagged = 0;
+    for (const e of list) {
+      let g;
+      if (!e.activity) { untagged += 1; continue; }
+      if (std.has(e.activity)) g = std.get(e.activity);
+      else {
+        const key = e.activity.toLowerCase();
+        if (!custom.has(key)) custom.set(key, make(e.activity));
+        g = custom.get(key);
+      }
+      g.count += 1;
+      g.buckets[bucketOf(e.t)] += 1;
+      if (g.last == null || e.t > g.last) g.last = e.t;
     }
-    const rows = [...groups.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-    const total = rows.reduce((a, r) => a + r.count, 0);
-    return rows.map((r) => ({ ...r, pct: total ? Math.round((r.count / total) * 100) : 0 }));
+    const children = [...custom.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const leaves = [...std.values(), ...children];
+    const pcts = sharesOf(leaves.map((g) => g.count));
+    leaves.forEach((g, i) => { g.pct = pcts[i]; });
+    const finish = (g) => {
+      const best = BUCKETS.reduce((a, b) => (g.buckets[b] > g.buckets[a] ? b : a), BUCKETS[0]);
+      return { name: g.name, count: g.count, pct: g.pct, last: g.last, mostly: g.count ? best : null };
+    };
+    const other = make('Other');
+    for (const c of children) {
+      other.count += c.count;
+      for (const b of BUCKETS) other.buckets[b] += c.buckets[b];
+      if (c.last != null && (other.last == null || c.last > other.last)) other.last = c.last;
+    }
+    other.pct = children.reduce((a, c) => a + c.pct, 0);
+    const rows = [...[...std.values()].map(finish), { ...finish(other), children: children.map(finish) }]
+      .sort((a, b) => b.count - a.count);
+    const tagged = list.length - untagged;
+    return { total: list.length, tagged, untagged, rows };
   }
 
   function removeEntry(state, id) {
@@ -317,7 +358,8 @@
     cleanActivity,
     setEntryActivity,
     activityBreakdown,
-    otherBreakdown,
+    activityStats,
+    sharesOf,
     toLimit,
     addEntry,
     removeEntry,
