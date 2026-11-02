@@ -57,13 +57,13 @@ test('feedback says when you went over', () => {
   const s = withEntries([8, 9, 10, 11, 12].map((h) => at(2026, 11, 4, h)), { daily: 3 });
   const fb = L.feedback(s, now);
   assert.equal(fb[0].level, 'bad');
-  assert.equal(fb[0].text, "You went over today's limit by 2 pouches.");
+  assert.equal(fb[0].text, "You went over today's limit by 2 lip pillows.");
 });
 
 test('feedback warns near the limit', () => {
   const now = new Date(2026, 10, 4, 20);
   const s = withEntries([8, 9, 10, 11].map((h) => at(2026, 11, 4, h)), { daily: 5 });
-  assert.ok(L.feedback(s, now).some((m) => m.text === '1 pouch left today.'));
+  assert.ok(L.feedback(s, now).some((m) => m.text === '1 lip pillow left today.'));
 });
 
 test('streak counts days within the limit back from yesterday', () => {
@@ -77,7 +77,7 @@ test('streak counts days within the limit back from yesterday', () => {
   assert.ok(L.feedback(s, now).some((m) => m.text === 'Stayed within your daily limit 3 days in a row.'));
 });
 
-test('longest gap today, including the gap since the last pouch', () => {
+test('longest gap today, including the gap since the last lip pillow', () => {
   const s = withEntries([at(2026, 11, 4, 8), at(2026, 11, 4, 11, 10), at(2026, 11, 4, 12)]);
   const g1 = L.longestGapToday(s.entries, new Date(2026, 10, 4, 13));
   assert.equal(L.formatDuration(g1.ms), '3h 10m');

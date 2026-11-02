@@ -2,7 +2,7 @@
   "name": "snus-tracker",
   "version": "1.0.0",
   "private": true,
-  "description": "Standalone nicotine pouch tracker with limits, feedback and trends.",
+  "description": "Standalone lip pillow (nicotine pouch) tracker with limits, feedback and trends.",
   "scripts": {
     "test": "node --test test/*.test.js",
     "start": "npx --yes serve ."

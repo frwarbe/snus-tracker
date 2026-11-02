@@ -155,7 +155,7 @@
   }
 
   // Days in a row at or under the daily limit, counting back from yesterday.
-  // Only counts days on or after the first logged pouch.
+  // Only counts days on or after the first logged lip pillow.
   function underStreak(state, now) {
     const daily = state.settings.daily;
     if (daily == null || state.entries.length === 0) return 0;
@@ -176,8 +176,8 @@
     return null;
   }
 
-  // Longest gap between pouches today. The gap from the last pouch until now
-  // counts too ("so far"). Needs at least one pouch today.
+  // Longest gap between lip pillows today. The gap from the last lip pillow until now
+  // counts too ("so far"). Needs at least one lip pillow today.
   function longestGapToday(entries, now) {
     const p = periods(now).day;
     const today = entriesBetween(entries, p.from, Math.min(+p.to, +now + 1));
@@ -234,11 +234,11 @@
     for (const key of ['day', 'week', 'month']) {
       const x = s[key];
       if (x.status === 'over') {
-        out.push({ level: 'bad', text: `You went over ${LIMIT_WORD[key]} limit by ${plural(x.over, 'pouch')}.` });
+        out.push({ level: 'bad', text: `You went over ${LIMIT_WORD[key]} limit by ${plural(x.over, 'lip pillow')}.` });
       } else if (x.status === 'at') {
         out.push({ level: 'warn', text: `That's your limit for ${PERIOD_WORD[key]} (${x.limit}).` });
       } else if (x.status === 'near') {
-        out.push({ level: 'warn', text: `${plural(x.left, 'pouch')} left ${PERIOD_WORD[key]}.` });
+        out.push({ level: 'warn', text: `${plural(x.left, 'lip pillow')} left ${PERIOD_WORD[key]}.` });
       }
     }
     const streak = underStreak(state, now);

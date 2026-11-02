@@ -67,8 +67,8 @@
     $('todayCount').className = 'big' + (s.day.status === 'over' ? ' over' : '');
     const last = L.lastEntry(state.entries, now);
     $('lastPouch').textContent = last
-      ? `Last pouch: ${fmtTime(last.t)}\n${L.formatDuration(now - last.t)} ago`
-      : 'No pouches yet';
+      ? `Last lip pillow: ${fmtTime(last.t)}\n${L.formatDuration(now - last.t)} ago`
+      : 'No lip pillows yet';
     $('lastPouch').style.whiteSpace = 'pre-line';
     $('undo').disabled = state.entries.length === 0;
 
@@ -102,14 +102,14 @@
       })
     );
 
-    // Today's pouches
+    // Today's lip pillows
     const p = L.periods(now).day;
     const todays = L.entriesBetween(state.entries, p.from, p.to).slice().reverse();
     $('todayList').replaceChildren(
       ...(todays.length
         ? todays.map((e) => {
             const time = el('input', { type: 'time' });
-            time.setAttribute('aria-label', 'Time of pouch');
+            time.setAttribute('aria-label', 'Time of lip pillow');
             time.value = `${pad(new Date(e.t).getHours())}:${pad(new Date(e.t).getMinutes())}`;
             time.addEventListener('change', () => {
               if (!time.value) return;
@@ -119,7 +119,7 @@
               commit(L.updateEntryTime(state, e.id, +d), 'Time updated');
             });
             const del = el('button', { textContent: 'Delete' });
-            del.addEventListener('click', () => commit(L.removeEntry(state, e.id), 'Pouch deleted'));
+            del.addEventListener('click', () => commit(L.removeEntry(state, e.id), 'Lip pillow deleted'));
             return el('li', { className: 'row between' }, time, del);
           })
         : [el('li', { className: 'muted', textContent: 'None today' })])
@@ -145,7 +145,7 @@
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', `Pouches per day, last ${range} days`);
+    svg.setAttribute('aria-label', `Lip pillows per day, last ${range} days`);
     const add = (tag, attrs, text) => {
       const n = document.createElementNS(ns, tag);
       for (const k in attrs) n.setAttribute(k, attrs[k]);
@@ -273,7 +273,7 @@
   syncLogTime();
   $('undo').addEventListener('click', () => {
     const last = state.entries[state.entries.length - 1];
-    if (last) commit(L.removeEntry(state, last.id), `Removed pouch from ${fmtTime(last.t)}`);
+    if (last) commit(L.removeEntry(state, last.id), `Removed lip pillow from ${fmtTime(last.t)}`);
   });
   $('ranges').addEventListener('click', (e) => {
     const d = Number(e.target.dataset && e.target.dataset.days);
@@ -307,14 +307,14 @@
     if (!file) return;
     try {
       const next = L.normalize(JSON.parse(await file.text()));
-      if (!confirm(`Replace your data with this backup (${next.entries.length} pouches)?`)) return;
+      if (!confirm(`Replace your data with this backup (${next.entries.length} lip pillows)?`)) return;
       commit(next, 'Backup restored');
     } catch (err) {
       toast("That file isn't a snus tracker backup");
     }
   });
   $('clear').addEventListener('click', () => {
-    if (confirm('Delete all pouches and limits on this device? This cannot be undone.')) {
+    if (confirm('Delete all lip pillows and limits on this device? This cannot be undone.')) {
       commit(L.emptyState(), 'All data deleted');
     }
   });

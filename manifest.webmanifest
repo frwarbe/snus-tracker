@@ -1,7 +1,7 @@
 {
   "name": "Snus Tracker",
   "short_name": "Snus",
-  "description": "Track nicotine pouches against your daily, weekly and monthly limits.",
+  "description": "Track lip pillows (nicotine pouches) against your daily, weekly and monthly limits.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
