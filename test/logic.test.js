@@ -119,3 +119,25 @@ test('normalize cleans imported data and rejects junk', () => {
   assert.deepEqual(s.entries.map((e) => e.t), [100, 300]);
   assert.throws(() => L.normalize({ foo: 1 }));
 });
+
+test('activity can be set, changed and cleared', () => {
+  let s = withEntries([at(2026, 11, 4, 8)]);
+  const id = s.entries[0].id;
+  s = L.setEntryActivity(s, id, '  Drinking ');
+  assert.equal(s.entries[0].activity, 'Drinking');
+  s = L.updateEntryTime(s, id, at(2026, 11, 4, 9));
+  assert.equal(s.entries[0].activity, 'Drinking');
+  s = L.setEntryActivity(s, id, '');
+  assert.equal('activity' in s.entries[0], false);
+});
+
+test('activity breakdown and import keep activities', () => {
+  let s = withEntries([at(2026, 11, 4, 8), at(2026, 11, 4, 9), at(2026, 11, 4, 10)]);
+  s = L.setEntryActivity(s, s.entries[0].id, 'Outside');
+  s = L.setEntryActivity(s, s.entries[1].id, 'Outside');
+  assert.deepEqual(L.activityBreakdown(s.entries, new Date(2026, 10, 4, 20), 30),
+    [{ name: 'Outside', count: 2 }, { name: 'Not set', count: 1 }]);
+  const back = L.normalize(JSON.parse(JSON.stringify(s)));
+  assert.equal(back.entries[0].activity, 'Outside');
+  assert.equal(L.normalize({ entries: [{ t: 1, activity: 42 }] }).entries[0].activity, undefined);
+});

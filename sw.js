@@ -1,5 +1,5 @@
 // Offline cache. Serves the saved copy right away and refreshes it in the background.
-const CACHE = 'snus-tracker-v1';
+const CACHE = 'snus-tracker-v2';
 const FILES = ['./', 'index.html', 'logic.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

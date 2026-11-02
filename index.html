@@ -26,7 +26,8 @@
     section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 12px 0; }
     h1 { font-size: 20px; margin: 4px 0 0; }
     h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    button, input { font: inherit; color: inherit; }
+    button, input, select { font: inherit; color: inherit; }
+    select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
     button { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
     button.primary { background: var(--accent); color: #fff; border: 0; }
     button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
@@ -35,6 +36,7 @@
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .between { justify-content: space-between; }
     .big { font-size: 40px; font-weight: 700; line-height: 1.1; }
+    .chip { border-radius: 999px; }
     #log { width: 100%; font-size: 28px; font-weight: 700; padding: 18px; border-radius: 14px; margin: 12px 0 8px; }
     ul { list-style: none; padding: 0; margin: 0; }
     li { padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -74,6 +76,14 @@
     </div>
     <button id="log" class="primary">+1 lip pillow</button>
     <div class="row"><button id="undo">Undo last</button></div>
+    <div id="activityAsk" hidden style="margin-top:12px">
+      <div class="muted" id="activityAskLabel">What were you doing? (optional)</div>
+      <div class="row" id="activityChips" style="margin-top:6px"></div>
+      <div class="row" id="otherRow" hidden style="margin-top:6px">
+        <input id="otherText" maxlength="60" placeholder="What were you doing?" aria-label="Other activity">
+        <button id="otherSave">Save</button>
+      </div>
+    </div>
   </section>
 
   <section id="feedbackBox">
@@ -99,6 +109,11 @@
     </div>
     <div id="chart"></div>
     <div class="muted" id="chartNote"></div>
+  </section>
+
+  <section>
+    <h2>What you were doing (last 30 days)</h2>
+    <div id="activities"></div>
   </section>
 
   <section>

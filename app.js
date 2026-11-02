@@ -120,12 +120,13 @@
             });
             const del = el('button', { textContent: 'Delete' });
             del.addEventListener('click', () => commit(L.removeEntry(state, e.id), 'Lip pillow deleted'));
-            return el('li', { className: 'row between' }, time, del);
+            return el('li', { className: 'row between' }, time, activitySelect(e), del);
           })
         : [el('li', { className: 'muted', textContent: 'None today' })])
     );
 
     renderChart(now);
+    renderActivities(now);
     renderTimeOfDay(now);
     renderHistory(now);
     renderLimits(now, s.limits);
@@ -160,11 +161,11 @@
     add('line', { x1: padL, x2: W - padR, y1: y(0), y2: y(0), stroke: c('--line') });
     add('text', { x: padL - 6, y: y(max) + 4, 'text-anchor': 'end', 'font-size': 12, fill: c('--muted') }, max);
     add('text', { x: padL - 6, y: y(0) + 4, 'text-anchor': 'end', 'font-size': 12, fill: c('--muted') }, 0);
-    const labelIdx = [0, Math.floor((series.length - 1) / 2), series.length - 1];
+    const labelIdx = series.length < 3 ? [series.length - 1] : [0, Math.floor((series.length - 1) / 2), series.length - 1];
     labelIdx.forEach((i, k) =>
       add('text', {
         x: x(i), y: H - 6, 'font-size': 12, fill: c('--muted'),
-        'text-anchor': k === 0 ? 'start' : k === 2 ? 'end' : 'middle',
+        'text-anchor': labelIdx.length === 1 ? 'start' : k === 0 ? 'start' : k === 2 ? 'end' : 'middle',
       }, series[i].date.toLocaleDateString([], { day: 'numeric', month: 'short' }))
     );
     // Limit line
@@ -189,6 +190,45 @@
     const overDays = limit == null ? 0 : series.filter((d) => d.count > limit).length;
     $('chartNote').textContent =
       `Average ${(total / series.length).toFixed(1)} a day` + (limit == null ? '' : ` · ${overDays} day${overDays === 1 ? '' : 's'} over limit`);
+  }
+
+  // Dropdown on each of today's entries to set or change what you were doing.
+  function activitySelect(e) {
+    const sel = el('select');
+    sel.setAttribute('aria-label', 'What were you doing');
+    const opts = ['', ...L.ACTIVITIES];
+    if (e.activity && !opts.includes(e.activity)) opts.push(e.activity);
+    for (const o of opts) sel.append(el('option', { value: o, textContent: o || 'Activity…' }));
+    sel.append(el('option', { value: '__other', textContent: 'Other…' }));
+    sel.value = e.activity || '';
+    sel.style.maxWidth = '40%';
+    sel.addEventListener('change', () => {
+      let v = sel.value;
+      if (v === '__other') {
+        v = prompt('What were you doing?', '');
+        if (v == null) return render();
+      }
+      commit(L.setEntryActivity(state, e.id, v), 'Saved');
+    });
+    return sel;
+  }
+
+  function renderActivities(now) {
+    const rows = L.activityBreakdown(state.entries, now, 30);
+    const total = rows.reduce((a, r) => a + r.count, 0);
+    $('activities').replaceChildren(
+      ...(rows.length
+        ? rows.map((r) => {
+            const pct = Math.round((r.count / total) * 100);
+            const bar = el('div', { className: 'bar' }, el('span'));
+            bar.firstChild.style.width = `${pct}%`;
+            return el('div', { style: 'margin-bottom:8px' },
+              el('div', { className: 'row between' }, el('span', { textContent: r.name }),
+                el('span', { textContent: `${r.count} (${pct}%)` })),
+              bar);
+          })
+        : [el('div', { className: 'muted', textContent: 'Nothing logged yet' })])
+    );
   }
 
   function renderTimeOfDay(now) {
@@ -237,12 +277,54 @@
 
   // ---- Events ----
   // Show the first feedback message that changed after logging.
+  // After logging, ask (optionally) what you were doing. Answering tags that entry.
+  let askFor = null;
+  function showActivityAsk(id) {
+    askFor = id;
+    $('activityAsk').hidden = false;
+    $('otherRow').hidden = true;
+    $('otherText').value = '';
+    const chips = [...L.ACTIVITIES, 'Other'].map((name) => {
+      const b = el('button', { className: 'chip', textContent: name, type: 'button' });
+      b.addEventListener('click', () => {
+        if (name === 'Other') {
+          $('otherRow').hidden = false;
+          $('otherText').focus();
+          return;
+        }
+        setAskedActivity(name);
+      });
+      return b;
+    });
+    const skip = el('button', { className: 'chip muted', textContent: 'Skip', type: 'button' });
+    skip.addEventListener('click', hideActivityAsk);
+    $('activityChips').replaceChildren(...chips, skip);
+  }
+  function hideActivityAsk() {
+    askFor = null;
+    $('activityAsk').hidden = true;
+  }
+  function setAskedActivity(name) {
+    const id = askFor;
+    hideActivityAsk();
+    if (id && state.entries.some((e) => e.id === id)) commit(L.setEntryActivity(state, id, name), `Saved: ${name}`);
+  }
+  $('otherSave').addEventListener('click', () => {
+    const v = L.cleanActivity($('otherText').value);
+    if (!v) return toast('Type what you were doing, or tap Skip');
+    setAskedActivity(v);
+  });
+  $('otherText').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('otherSave').click(); });
+
   function logAt(t) {
     const before = new Set(L.feedback(state, new Date()).map((m) => m.text));
+    const oldIds = new Set(state.entries.map((e) => e.id));
     const next = L.addEntry(state, t);
+    const added = next.entries.find((e) => !oldIds.has(e.id));
     const msg = L.feedback(next, new Date()).find((m) => !before.has(m.text) && m.level !== 'info');
     const s = L.summary(next, new Date());
     commit(next, msg ? msg.text : s.day.limit == null ? 'Logged' : `Logged · ${s.day.left} left today`);
+    if (added) showActivityAsk(added.id);
   }
 
   // The time field follows the clock until you change it. After logging it goes back to "now".
@@ -273,6 +355,7 @@
   syncLogTime();
   $('undo').addEventListener('click', () => {
     const last = state.entries[state.entries.length - 1];
+    if (last && last.id === askFor) hideActivityAsk();
     if (last) commit(L.removeEntry(state, last.id), `Removed lip pillow from ${fmtTime(last.t)}`);
   });
   $('ranges').addEventListener('click', (e) => {
@@ -308,6 +391,7 @@
     try {
       const next = L.normalize(JSON.parse(await file.text()));
       if (!confirm(`Replace your data with this backup (${next.entries.length} lip pillows)?`)) return;
+      hideActivityAsk();
       commit(next, 'Backup restored');
     } catch (err) {
       toast("That file isn't a snus tracker backup");
@@ -315,6 +399,7 @@
   });
   $('clear').addEventListener('click', () => {
     if (confirm('Delete all lip pillows and limits on this device? This cannot be undone.')) {
+      hideActivityAsk();
       commit(L.emptyState(), 'All data deleted');
     }
   });

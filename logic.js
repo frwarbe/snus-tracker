@@ -53,7 +53,12 @@
     const entries = raw.entries
       .map((e) => (typeof e === 'number' ? { id: newId(e), t: e } : e))
       .filter((e) => e && Number.isFinite(Number(e.t)))
-      .map((e) => ({ id: String(e.id || newId(e.t)), t: Number(e.t) }))
+      .map((e) => {
+        const out = { id: String(e.id || newId(e.t)), t: Number(e.t) };
+        const a = cleanActivity(e.activity);
+        if (a) out.activity = a;
+        return out;
+      })
       .sort((a, b) => a.t - b.t);
     return {
       settings: { daily: toLimit(s.daily), weekly: toLimit(s.weekly), monthly: toLimit(s.monthly) },
@@ -71,6 +76,33 @@
     const entries = state.entries.concat({ id: newId(t), t: Number(t) }).sort((a, b) => a.t - b.t);
     return { ...state, entries };
   }
+  // ---- Activities (optional "what were you doing?") ----
+  const ACTIVITIES = ['Studying/Working', 'Outside', 'Drinking', 'Misc.'];
+  function cleanActivity(v) {
+    if (typeof v !== 'string') return null;
+    const x = v.trim().replace(/\s+/g, ' ').slice(0, 60);
+    return x || null;
+  }
+  function setEntryActivity(state, id, activity) {
+    const a = cleanActivity(activity);
+    const entries = state.entries.map((e) => {
+      if (e.id !== id) return e;
+      const { activity: _old, ...rest } = e;
+      return a ? { ...rest, activity: a } : rest;
+    });
+    return { ...state, entries };
+  }
+  // Counts per activity over the last `days` days, biggest first. Untagged ones are "Not set".
+  function activityBreakdown(entries, now, days) {
+    const from = addDays(startOfDay(now), -(days - 1));
+    const counts = new Map();
+    for (const e of entriesBetween(entries, from, addDays(startOfDay(now), 1))) {
+      const k = e.activity || 'Not set';
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  }
+
   function removeEntry(state, id) {
     return { ...state, entries: state.entries.filter((e) => e.id !== id) };
   }
@@ -265,6 +297,10 @@
     dayKey,
     emptyState,
     normalize,
+    ACTIVITIES,
+    cleanActivity,
+    setEntryActivity,
+    activityBreakdown,
     toLimit,
     addEntry,
     removeEntry,
