@@ -129,7 +129,7 @@
     renderActivities(now);
     renderTimeOfDay(now);
     renderHistory(now);
-    renderLimits(now, s.limits);
+    renderLimits(now);
   }
 
   function renderChart(now) {
@@ -264,16 +264,19 @@
     );
   }
 
-  function renderLimits(now, lim) {
+  function renderLimits(now) {
+    const s = state.settings;
+    $('limWeekly').placeholder = s.daily != null ? `auto: ${s.daily * 7}` : 'none';
+    $('limMonthly').placeholder = s.daily != null ? `auto: ${s.daily * L.daysInMonth(now)}` : 'none';
+    $('limWeeklyHint').textContent = s.weekly == null ? (s.daily != null ? 'auto' : '') : 'set by you · clear to use auto';
+    $('limMonthlyHint').textContent = s.monthly == null ? (s.daily != null ? 'auto' : '') : 'set by you · clear to use auto';
     // Don't overwrite what the user is typing.
     if ($('limits').contains(document.activeElement)) return;
-    const s = state.settings;
     $('limDaily').value = s.daily ?? '';
     $('limWeekly').value = s.weekly ?? '';
     $('limMonthly').value = s.monthly ?? '';
-    $('limWeekly').placeholder = s.daily != null ? `auto: ${s.daily * 7}` : 'none';
-    $('limMonthly').placeholder = s.daily != null ? `auto: ${s.daily * L.daysInMonth(now)}` : 'none';
   }
+
 
   // ---- Events ----
   // Show the first feedback message that changed after logging.
@@ -365,15 +368,21 @@
     try { localStorage.setItem(RANGE_KEY, String(d)); } catch (err) { /* ignore */ }
     renderChart(new Date());
   });
-  $('limits').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const settings = {
+  // Limits apply as you type; no Save button needed.
+  function readLimits() {
+    return {
       daily: L.toLimit($('limDaily').value),
       weekly: L.toLimit($('limWeekly').value),
       monthly: L.toLimit($('limMonthly').value),
     };
+  }
+  for (const id of ['limDaily', 'limWeekly', 'limMonthly']) {
+    $(id).addEventListener('input', () => commit({ ...state, settings: readLimits() }));
+    $(id).addEventListener('change', () => toast('Limits saved'));
+  }
+  $('limits').addEventListener('submit', (e) => {
+    e.preventDefault();
     document.activeElement.blur();
-    commit({ ...state, settings }, 'Limits saved');
   });
   $('export').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ app: 'snus-tracker', version: 1, ...state }, null, 2)], { type: 'application/json' });
@@ -414,5 +423,11 @@
   // Offline support (only works when served over http(s), not from a file).
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+    // When a new version takes over, reload once so the page shows it.
+    let reloaded = false;
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloaded) { reloaded = true; location.reload(); }
+    });
   }
 })();

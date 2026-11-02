@@ -3,7 +3,7 @@
 A standalone tracker for lip pillows (nicotine pouches). No AI, no server, no account: it runs in any browser and keeps your data on your device.
 
 ## Features
-- **Limits:** set a daily limit. Weekly (daily × 7) and monthly (daily × days in the month) are worked out automatically, or set them yourself. Weeks start on Monday.
+- **Limits:** set a daily limit. Weekly (daily × 7) and monthly (daily × days in the month) are worked out automatically, or set them yourself. Weeks start on Monday. Changes apply as you type.
 - **Log a lip pillow:** one tap on **+1 lip pillow** saves it at the current time. Forgot one earlier today? Change the time field above the button first (tap **Now** to go back). You can also undo the last one, or change the time on or delete any of today's lip pillows.
 - **What were you doing? (optional):** after each log, tap Studying/Working, Outside, Drinking, Misc., or Other (type your own), or Skip. Change it later from today's list. A breakdown shows what you were doing over the last 30 days.
 - **Feedback:** "2 lip pillows left today", "That's your limit for today", "You went over today's limit by 2 lip pillows", "Stayed within your daily limit 3 days in a row", "Longest gap today: 3h 10m".
