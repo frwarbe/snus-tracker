@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Snus Tracker</title>
+  <meta name="theme-color" content="#1f2933">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Snus">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    /* Placeholder styling only: the real design comes later. */
+    :root { --bg: #fff; --fg: #1f2933; --muted: #6b7280; --line: #e5e7eb; --accent: #2563eb;
+            --bad: #dc2626; --warn: #d97706; --good: #16a34a; --card: #f9fafb; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --accent: #60a5fa;
+              --bad: #f87171; --warn: #fbbf24; --good: #4ade80; --card: #1f2937; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+           font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    main { max-width: 560px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 12px 0; }
+    h1 { font-size: 20px; margin: 4px 0 0; }
+    h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    button, input { font: inherit; color: inherit; }
+    button { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+    button.primary { background: var(--accent); color: #fff; border: 0; }
+    button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-width: 0; }
+    .muted { color: var(--muted); }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .between { justify-content: space-between; }
+    .big { font-size: 40px; font-weight: 700; line-height: 1.1; }
+    #log { width: 100%; font-size: 28px; font-weight: 700; padding: 18px; border-radius: 14px; margin: 12px 0 8px; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+    li:last-child { border-bottom: 0; }
+    .msg-bad { color: var(--bad); font-weight: 600; }
+    .msg-warn { color: var(--warn); font-weight: 600; }
+    .msg-good { color: var(--good); }
+    .over { color: var(--bad); }
+    .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+    .bar > span { display: block; height: 100%; background: var(--accent); }
+    .bar.over > span { background: var(--bad); }
+    .bar.near > span, .bar.at > span { background: var(--warn); }
+    svg { width: 100%; height: auto; display: block; }
+    label { display: block; margin: 6px 0; }
+    label input { width: 7em; }
+    .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+             background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; max-width: 90vw; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Snus Tracker</h1>
+
+  <section id="today">
+    <div class="row between">
+      <div>
+        <div class="muted">Today</div>
+        <div class="big" id="todayCount">0</div>
+      </div>
+      <div class="muted" id="lastPouch" style="text-align:right"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label for="logTime" style="margin:0">Time</label>
+      <input type="time" id="logTime">
+      <button id="nowBtn" type="button">Now</button>
+      <span class="muted" id="logTimeNote"></span>
+    </div>
+    <button id="log" class="primary">+1 lip pillow</button>
+    <div class="row"><button id="undo">Undo last</button></div>
+  </section>
+
+  <section id="feedbackBox">
+    <h2>Feedback</h2>
+    <ul id="feedback"></ul>
+  </section>
+
+  <section>
+    <h2>Progress</h2>
+    <div id="progress"></div>
+  </section>
+
+  <section>
+    <h2>Today's pouches</h2>
+    <ul id="todayList"></ul>
+  </section>
+
+  <section>
+    <div class="row between"><h2>Trend</h2>
+      <div class="row" id="ranges">
+        <button data-days="7">7d</button><button data-days="30">30d</button><button data-days="90">90d</button>
+      </div>
+    </div>
+    <div id="chart"></div>
+    <div class="muted" id="chartNote"></div>
+  </section>
+
+  <section>
+    <h2>Time of day (last 30 days)</h2>
+    <div id="timeOfDay"></div>
+  </section>
+
+  <section>
+    <h2>History</h2>
+    <ul id="history"></ul>
+  </section>
+
+  <section>
+    <h2>Limits</h2>
+    <form id="limits">
+      <label>Daily <input type="number" id="limDaily" min="0" inputmode="numeric" placeholder="none"></label>
+      <label>Weekly <input type="number" id="limWeekly" min="0" inputmode="numeric"></label>
+      <label>Monthly <input type="number" id="limMonthly" min="0" inputmode="numeric"></label>
+      <div class="muted">Leave weekly or monthly empty to work them out from the daily limit.</div>
+      <div class="row" style="margin-top:8px"><button class="primary" type="submit">Save limits</button></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Backup</h2>
+    <div class="row">
+      <button id="export">Export</button>
+      <button id="importBtn">Import</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button id="clear">Delete all data</button>
+    </div>
+    <div class="muted" style="margin-top:8px">Your data is stored only on this device.</div>
+  </section>
+</main>
+
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
