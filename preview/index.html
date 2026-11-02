@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Snus Tracker</title>
+  <meta name="theme-color" content="#F7F5EC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#252522" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Snus">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preload" href="fonts/patrick-hand-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <div>
+      <h1>Snus Tracker</h1>
+      <p class="tagline">Track your lip pillows. Stay in control.</p>
+    </div>
+    <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings: limits and backup">
+      <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.6 7.6 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z"/></svg>
+    </button>
+  </header>
+
+  <!-- Today -->
+  <section class="entry" aria-labelledby="hToday">
+    <h2 id="hToday">Today</h2>
+    <div class="count-wrap">
+      <div class="count" id="todayCount" aria-live="polite">0</div>
+      <div class="count-note" id="countNote"></div>
+    </div>
+    <p class="last" id="lastPouch"></p>
+
+    <div class="time-row">
+      <label for="logTime">Time:</label>
+      <input type="time" id="logTime" class="field">
+      <span class="pencil" id="logTimeNote"></span>
+      <button id="nowBtn" type="button" class="btn small">Now</button>
+    </div>
+
+    <button id="log" class="btn primary" type="button">+1 lip pillow</button>
+    <button id="undo" class="btn secondary" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 7 4.5 11 9 15"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5 11h9.5a5 5 0 0 1 0 10H12"/></svg>
+      Undo last
+    </button>
+
+    <div id="activityAsk" class="ask" hidden>
+      <p class="ask-label"><strong>What were you doing?</strong> <span class="pencil">(optional)</span></p>
+      <div class="chips" id="activityChips"></div>
+    </div>
+
+    <ul class="notes" id="feedback" aria-live="polite"></ul>
+  </section>
+
+  <!-- Progress -->
+  <section class="entry" aria-labelledby="hProgress">
+    <h2 id="hProgress">Progress</h2>
+    <div id="progress"></div>
+  </section>
+
+  <!-- Today's list -->
+  <section class="entry" aria-labelledby="hList">
+    <h2 id="hList">Today's lip pillows</h2>
+    <ul class="ruled" id="todayList"></ul>
+  </section>
+
+  <!-- Trend -->
+  <section class="entry" aria-labelledby="hTrend">
+    <h2 id="hTrend">Trend <span class="h-sub">· lip pillows per day</span></h2>
+    <div class="seg" id="ranges" role="group" aria-label="Range">
+      <button type="button" data-days="7">7 days</button>
+      <button type="button" data-days="30">30 days</button>
+      <button type="button" data-days="90">90 days</button>
+    </div>
+    <div id="chart"></div>
+    <p class="pencil small-text" id="chartNote"></p>
+  </section>
+
+  <!-- Activities -->
+  <section class="entry" aria-labelledby="hAct">
+    <h2 id="hAct">What you were doing <span class="h-sub">· last 30 days</span></h2>
+    <div class="cols" id="activities"></div>
+  </section>
+
+  <!-- Time of day -->
+  <section class="entry" aria-labelledby="hTod">
+    <h2 id="hTod">Time of day <span class="h-sub">· last 30 days</span></h2>
+    <div class="cols" id="timeOfDay"></div>
+  </section>
+
+  <!-- History -->
+  <section class="entry" aria-labelledby="hHist">
+    <h2 id="hHist">History <span class="h-sub">· last 30 days</span></h2>
+    <ul class="ruled" id="history"></ul>
+    <button type="button" class="link-btn" id="moreHistory" hidden>Show more</button>
+  </section>
+
+  <!-- Settings -->
+  <section class="entry" id="settings" aria-labelledby="hLimits">
+    <h2 id="hLimits">Limits</h2>
+    <form id="limits" class="limits">
+      <label for="limDaily">Daily</label>
+      <input type="number" id="limDaily" class="field" min="0" inputmode="numeric" placeholder="none">
+      <span class="pencil" id="limDailyHint"></span>
+
+      <label for="limWeekly">Weekly</label>
+      <input type="number" id="limWeekly" class="field" min="0" inputmode="numeric">
+      <span class="pencil" id="limWeeklyHint"></span>
+
+      <label for="limMonthly">Monthly</label>
+      <input type="number" id="limMonthly" class="field" min="0" inputmode="numeric">
+      <span class="pencil" id="limMonthlyHint"></span>
+    </form>
+    <p class="pencil small-text">Changes apply straight away. Leave weekly or monthly empty to work them out from your daily limit.</p>
+  </section>
+
+  <section class="entry" aria-labelledby="hBackup">
+    <h2 id="hBackup">Backup</h2>
+    <div class="btn-row">
+      <button id="export" class="btn small" type="button">Export</button>
+      <button id="importBtn" class="btn small" type="button">Import</button>
+      <button id="clear" class="btn small danger" type="button">Delete all data</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="pencil small-text">Your data is stored only on this device.</p>
+  </section>
+</main>
+
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
