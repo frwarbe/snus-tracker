@@ -288,12 +288,9 @@
 
   function renderActivities(now) {
     const st = L.activityStats(state.entries, now, 30);
-    const by = Object.fromEntries(st.rows.map((r) => [r.name, r]));
-    const short = (n) => (n === 'Studying/Working' ? 'Study / Work' : n);
-    columns('activities', [...L.ACTIVITIES, 'Other'].map((n) => ({ name: short(n), count: by[n].count })), 'Nothing tagged yet');
-
     // Full breakdown: every answer with its count and share; your own answers sit under Other.
     const box = $('breakdown');
+    $('activityEmpty').hidden = st.tagged > 0;
     box.hidden = st.tagged === 0;
     if (!st.tagged) return box.replaceChildren();
     const row = (r, child) => {
@@ -309,13 +306,15 @@
         r.count ? el('div', { className: 'bd-sub', textContent: `${MOSTLY[r.mostly]} · last ${fmtLast(r.last)}` }) : '');
     };
     const out = [];
+    const unused = st.rows.filter((r) => !r.count && r.name !== 'Other').map((r) => r.name);
     for (const r of st.rows) {
-      if (r.name === 'Other' && !r.count) continue;
+      if (!r.count) continue;
       out.push(row(r, false));
       for (const c of r.children || []) out.push(row(c, true));
     }
     const foot = `Based on ${st.tagged} tagged lip pillow${st.tagged === 1 ? '' : 's'}` +
-      (st.untagged ? ` · ${st.untagged} not tagged` : '');
+      (st.untagged ? ` · ${st.untagged} not tagged` : '') +
+      (unused.length ? `. Not picked yet: ${unused.join(', ')}.` : '');
     box.replaceChildren(
       el('div', { className: 'bd-head' }, el('span', { textContent: 'Breakdown' }), el('span', { textContent: 'count · share' })),
       ...out,
@@ -485,8 +484,8 @@
     document.activeElement.blur();
   });
   $('export').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ app: 'snus-tracker', version: 1, ...state }, null, 2)], { type: 'application/json' });
-    const a = el('a', { href: URL.createObjectURL(blob), download: `snus-tracker-${L.dayKey(new Date())}.json` });
+    const blob = new Blob([JSON.stringify({ app: 'snuswatch', version: 1, ...state }, null, 2)], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: `snuswatch-${L.dayKey(new Date())}.json` });
     document.body.append(a);
     a.click();
     a.remove();
@@ -503,7 +502,7 @@
       askFor = null;
       commit(next, 'Backup restored');
     } catch (err) {
-      toast("That file isn't a snus tracker backup");
+      toast("That file isn't a SNUSwatch backup");
     }
   });
   $('clear').addEventListener('click', () => {

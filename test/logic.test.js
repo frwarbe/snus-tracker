@@ -147,7 +147,7 @@ test('full activity breakdown adds up to 100% with Other split into your own ans
   const ids = s.entries.map((e) => e.id);
   const tag = (i, a) => { s = L.setEntryActivity(s, ids[i], a); };
   tag(0, 'Studying/Working'); tag(1, 'Studying/Working'); tag(2, 'Studying/Working');
-  tag(3, 'At the gym'); tag(4, 'at the gym'); tag(5, 'Gaming');
+  tag(3, 'At the gym'); tag(4, 'at the gym'); tag(5, 'Painting');
   tag(6, 'Outside'); // ids[7] stays untagged
   const st = L.activityStats(s.entries, new Date(2026, 10, 4, 22), 30);
   assert.equal(st.total, 8);
@@ -158,7 +158,7 @@ test('full activity breakdown adds up to 100% with Other split into your own ans
   assert.equal(by['Studying/Working'].mostly, 'morning');
   assert.equal(by.Other.count, 3);
   assert.equal(by.Other.mostly, 'afternoon');
-  assert.deepEqual(by.Other.children.map((c) => [c.name, c.count]), [['At the gym', 2], ['Gaming', 1]]);
+  assert.deepEqual(by.Other.children.map((c) => [c.name, c.count]), [['At the gym', 2], ['Painting', 1]]);
   assert.equal(by.Other.pct, by.Other.children.reduce((a, c) => a + c.pct, 0));
   const total = st.rows.filter((r) => r.name !== 'Other').reduce((a, r) => a + r.pct, 0) + by.Other.pct;
   assert.equal(total, 100);
@@ -171,4 +171,16 @@ test('shares always add up to 100', () => {
   assert.deepEqual(L.sharesOf([1, 1, 1]), [34, 33, 33]);
   assert.deepEqual(L.sharesOf([0, 0]), [0, 0]);
   assert.equal(L.sharesOf([3, 7, 11, 13, 2]).reduce((a, n) => a + n, 0), 100);
+});
+
+test('typed answers that match a standard option count as that option', () => {
+  let s = withEntries([at(2026, 11, 4, 8), at(2026, 11, 4, 9)]);
+  s = L.setEntryActivity(s, s.entries[0].id, 'gaming');
+  s = L.setEntryActivity(s, s.entries[1].id, 'Chilling');
+  const st = L.activityStats(s.entries, new Date(2026, 10, 4, 20), 30);
+  const by = Object.fromEntries(st.rows.map((r) => [r.name, r]));
+  assert.equal(by.Gaming.count, 1);
+  assert.equal(by.Chilling.count, 1);
+  assert.equal(by.Other.count, 0);
+  assert.ok(L.ACTIVITIES.includes('With coffee'));
 });

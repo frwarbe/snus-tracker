@@ -47,7 +47,7 @@
   // Accepts anything (e.g. an imported file) and returns a clean state, or throws.
   function normalize(raw) {
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.entries)) {
-      throw new Error('Not a snus tracker backup');
+      throw new Error('Not a SNUSwatch backup');
     }
     const s = raw.settings || {};
     const entries = raw.entries
@@ -77,7 +77,10 @@
     return { ...state, entries };
   }
   // ---- Activities (optional "what were you doing?") ----
-  const ACTIVITIES = ['Studying/Working', 'Outside', 'Drinking', 'Misc.'];
+  const ACTIVITIES = [
+    'Studying/Working', 'Chilling', 'Outside', 'Gaming', 'With friends', 'Gym/Sport', 'Drinking',
+    'After a meal', 'With coffee', 'Bored', 'Stressed', 'Misc.',
+  ];
   function cleanActivity(v) {
     if (typeof v !== 'string') return null;
     const x = v.trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -129,7 +132,9 @@
     for (const e of list) {
       let g;
       if (!e.activity) { untagged += 1; continue; }
-      if (std.has(e.activity)) g = std.get(e.activity);
+      // A typed answer that matches a standard one (e.g. "gaming") counts as that one.
+      const stdName = ACTIVITIES.find((n) => n.toLowerCase() === e.activity.toLowerCase());
+      if (stdName) g = std.get(stdName);
       else {
         const key = e.activity.toLowerCase();
         if (!custom.has(key)) custom.set(key, make(e.activity));

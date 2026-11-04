@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Snus Tracker</title>
+  <title>SNUSwatch</title>
   <meta name="theme-color" content="#F7F5EC" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#252522" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Snus">
+  <meta name="apple-mobile-web-app-title" content="SNUSwatch">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
 <main>
   <header class="top">
     <div>
-      <h1>Snus Tracker</h1>
+      <h1>SNUSwatch</h1>
       <p class="tagline">Track your lip pillows. Stay in control.</p>
     </div>
     <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings: limits and backup">
@@ -85,7 +85,7 @@
   <!-- Activities -->
   <section class="entry" aria-labelledby="hAct">
     <h2 id="hAct">What you were doing <span class="h-sub">· last 30 days</span></h2>
-    <div class="cols" id="activities"></div>
+    <p class="pencil" id="activityEmpty">Nothing tagged yet. Pick an answer after you log a lip pillow.</p>
     <div class="breakdown" id="breakdown" hidden></div>
   </section>
 
