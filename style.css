@@ -329,10 +329,26 @@ input[type=time].field { width: 8.5em; }
 .bd-row.child .bd-bar > span { background: var(--light-pencil); }
 .bd-sub { margin-top: 4px; font-size: 12.5px; color: var(--pencil); }
 .bd-foot { margin: 10px 0 0; font-size: 12.5px; color: var(--pencil); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; background: var(--paper-dark); border-radius: var(--r1); min-width: 0; }
+.tile-label { font-size: 12.5px; color: var(--pencil); }
+.tile-value { font: 600 22px/1.2 var(--head); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile-sub { font-size: 12px; color: var(--pencil); }
+.hist-hint { margin: -6px 0 6px; }
+.hist-row { cursor: pointer; }
+.hist-row.open { border-bottom-color: transparent; }
+.hist-chev { color: var(--pencil); width: 1em; text-align: right; }
+.day-edit { display: block !important; padding: 0 0 12px 12px !important; border-left: 2px solid var(--light-pencil); margin-left: 4px; }
+.day-list li { min-height: 48px; }
+.day-add { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.backup-note { align-items: center !important; flex-wrap: wrap; }
+.backup-note span { flex: 1; min-width: 12em; }
 .empty-chart { color: var(--pencil); align-self: center; margin: auto; }
 
 /* ---- Limits ---- */
-.limits { display: grid; grid-template-columns: 6em 7em 1fr; align-items: center; gap: 10px 12px; }
+.limits { display: grid; grid-template-columns: 6em 7.5em 1fr; align-items: center; gap: 10px 12px; }
+.limits + .limits, .entry .limits ~ .small-text { margin-top: 10px; }
+select.field { appearance: auto; }
 .limits label { font-weight: 500; }
 .limits .pencil { font-size: 13px; }
 

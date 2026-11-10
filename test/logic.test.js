@@ -115,7 +115,7 @@ test('edit and delete entries', () => {
 
 test('normalize cleans imported data and rejects junk', () => {
   const s = L.normalize({ settings: { daily: '4', weekly: '', monthly: -1 }, entries: [300, { t: 100 }, { t: 'x' }] });
-  assert.deepEqual(s.settings, { daily: 4, weekly: null, monthly: null });
+  assert.deepEqual(s.settings, { ...L.DEFAULT_SETTINGS, daily: 4 });
   assert.deepEqual(s.entries.map((e) => e.t), [100, 300]);
   assert.throws(() => L.normalize({ foo: 1 }));
 });
@@ -183,4 +183,86 @@ test('typed answers that match a standard option count as that option', () => {
   assert.equal(by.Chilling.count, 1);
   assert.equal(by.Other.count, 0);
   assert.ok(L.ACTIVITIES.includes('With coffee'));
+});
+
+test('undo target is the entry logged most recently, not the latest time', () => {
+  let s = L.emptyState();
+  s = L.addEntry(s, at(2026, 11, 4, 14), { c: at(2026, 11, 4, 14) });
+  s = L.addEntry(s, at(2026, 11, 4, 10), { c: at(2026, 11, 4, 15) }); // forgot one, added later
+  assert.equal(L.lastAdded(s.entries).t, at(2026, 11, 4, 10));
+  // Old entries without a "logged at" time fall back to their own time.
+  assert.equal(L.lastAdded([{ id: 'a', t: 5 }, { id: 'b', t: 9 }]).id, 'b');
+  assert.equal(L.lastAdded([]), null);
+});
+
+test('day can start at 4am so late nights count towards the day before', () => {
+  try {
+    L.setDayStart(4);
+    const s = withEntries([at(2026, 11, 4, 22), at(2026, 11, 5, 1, 30), at(2026, 11, 5, 9)], { daily: 5 });
+    // At 2am on the 5th, it's still "the 4th".
+    const twoAm = new Date(2026, 10, 5, 2);
+    assert.equal(L.dayKey(L.startOfDay(twoAm)), '2026-11-04');
+    assert.equal(L.summary(s, twoAm).day.count, 2);
+    assert.equal(L.summary(s, new Date(2026, 10, 5, 12)).day.count, 1);
+    // Picking 01:30 inside "the 4th" means the early hours of the 5th.
+    assert.equal(+L.timeInDay(L.startOfDay(twoAm), 1, 30), at(2026, 11, 5, 1, 30));
+    assert.equal(+L.timeInDay(L.startOfDay(twoAm), 23, 0), at(2026, 11, 4, 23));
+    // Month boundary: 1am on Dec 1st still belongs to November.
+    assert.equal(L.daysInMonth(new Date(2026, 11, 1, 1)), 30);
+    assert.equal(L.dayKey(L.periods(new Date(2026, 11, 1, 1)).month.from), '2026-11-01');
+  } finally {
+    L.setDayStart(0);
+  }
+});
+
+test('money and nicotine', () => {
+  let s = withEntries([8, 10, 12].map((h) => at(2026, 11, 4, h)), { tinPrice: 5, perTin: 20, mg: 6 });
+  const u = L.usage(s, new Date(2026, 10, 4, 20));
+  assert.equal(u.today.count, 3);
+  assert.equal(u.today.mg, 18);
+  assert.equal(u.today.cost, 0.75);
+  assert.equal(u.avg.days, 1);
+  assert.equal(Math.round(u.yearlyCost * 100) / 100, 273.75);
+  assert.equal(u.tinsMonth, 0.15);
+  // Nothing configured: no money or nicotine numbers.
+  const bare = L.usage(withEntries([at(2026, 11, 4, 8)]), new Date(2026, 10, 4, 20));
+  assert.equal(bare.today.cost, null);
+  assert.equal(bare.today.mg, null);
+  // 20 per tin is assumed when not set.
+  assert.equal(L.costPerPillow({ tinPrice: 4 }), 0.2);
+});
+
+test('changing strength keeps the old strength on earlier lip pillows', () => {
+  let s = withEntries([at(2026, 11, 4, 8)], { mg: 6 });
+  s = L.setStrength(s, 4);
+  s = L.addEntry(s, at(2026, 11, 4, 9), { mg: s.settings.mg });
+  assert.deepEqual(s.entries.map((e) => e.mg), [6, 4]);
+  assert.equal(L.usage(s, new Date(2026, 10, 4, 20)).today.mg, 10);
+});
+
+test('money formatting', () => {
+  assert.equal(L.formatMoney(12.5, '£'), '£12.50');
+  assert.equal(L.formatMoney(12.5, 'kr'), '12.50 kr');
+  assert.equal(L.formatMoney(3, ''), '3.00');
+});
+
+test('backup reminder after 7 days', () => {
+  const s = withEntries([1, 2, 3, 4, 5].map((d) => at(2026, 11, d, 12)));
+  assert.equal(L.backupStatus(s, new Date(2026, 10, 6)).due, false);
+  assert.equal(L.backupStatus(s, new Date(2026, 10, 9)).due, true);
+  const backed = { ...s, settings: { ...s.settings, lastBackup: at(2026, 11, 8, 12) } };
+  assert.equal(L.backupStatus(backed, new Date(2026, 10, 10)).due, false);
+  assert.equal(L.backupStatus(withEntries([at(2026, 11, 1)]), new Date(2026, 11, 30)).due, false);
+});
+
+test('imported backups keep the new settings and per-entry details', () => {
+  const s = L.normalize({ settings: { mg: '6', tinPrice: '4,50', perTin: 0, currency: ' kr ', dayStart: 9, lastBackup: 123 },
+    entries: [{ t: 10, c: 20, mg: 4 }] });
+  assert.equal(s.settings.mg, 6);
+  assert.equal(s.settings.tinPrice, 4.5);
+  assert.equal(s.settings.perTin, null);
+  assert.equal(s.settings.currency, 'kr');
+  assert.equal(s.settings.dayStart, 0);
+  assert.equal(s.settings.lastBackup, 123);
+  assert.deepEqual([s.entries[0].c, s.entries[0].mg], [20, 4]);
 });

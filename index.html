@@ -64,6 +64,12 @@
     <div id="progress"></div>
   </section>
 
+  <!-- Money & nicotine -->
+  <section class="entry" aria-labelledby="hUsage">
+    <h2 id="hUsage">Money &amp; nicotine</h2>
+    <div id="usage"></div>
+  </section>
+
   <!-- Today's list -->
   <section class="entry" aria-labelledby="hList">
     <h2 id="hList">Today's lip pillows</h2>
@@ -98,6 +104,7 @@
   <!-- History -->
   <section class="entry" aria-labelledby="hHist">
     <h2 id="hHist">History <span class="h-sub">· last 30 days</span></h2>
+    <p class="pencil small-text hist-hint">Tap a day to add or change its lip pillows.</p>
     <ul class="ruled" id="history"></ul>
     <button type="button" class="link-btn" id="moreHistory" hidden>Show more</button>
   </section>
@@ -121,6 +128,40 @@
     <p class="pencil small-text">Changes apply straight away. Leave weekly or monthly empty to work them out from your daily limit.</p>
   </section>
 
+  <section class="entry" aria-labelledby="hPillow">
+    <h2 id="hPillow">Your lip pillows</h2>
+    <form id="pillow" class="limits">
+      <label for="setMg">Strength</label>
+      <input type="text" id="setMg" class="field" inputmode="decimal" placeholder="mg">
+      <span class="pencil">mg nicotine each</span>
+
+      <label for="setPrice">Tin price</label>
+      <input type="text" id="setPrice" class="field" inputmode="decimal" placeholder="e.g. 5.50">
+      <span class="pencil" id="setPriceHint"></span>
+
+      <label for="setPerTin">Per tin</label>
+      <input type="number" id="setPerTin" class="field" min="1" inputmode="numeric" placeholder="20">
+      <span class="pencil">lip pillows</span>
+
+      <label for="setCurrency">Currency</label>
+      <input type="text" id="setCurrency" class="field" maxlength="5" placeholder="£, €, kr…" autocomplete="off">
+      <span></span>
+
+      <label for="setDayStart">Day starts</label>
+      <select id="setDayStart" class="field">
+        <option value="0">at midnight</option>
+        <option value="1">at 1am</option>
+        <option value="2">at 2am</option>
+        <option value="3">at 3am</option>
+        <option value="4">at 4am</option>
+        <option value="5">at 5am</option>
+        <option value="6">at 6am</option>
+      </select>
+      <span class="pencil">for late nights</span>
+    </form>
+    <p class="pencil small-text">Strength and price are used for the money and nicotine numbers. Changing the strength keeps the old strength on lip pillows you already logged.</p>
+  </section>
+
   <section class="entry" aria-labelledby="hBackup">
     <h2 id="hBackup">Backup</h2>
     <div class="btn-row">
@@ -129,7 +170,8 @@
       <button id="clear" class="btn small danger" type="button">Delete all data</button>
     </div>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
-    <p class="pencil small-text">Your data is stored only on this device.</p>
+    <p class="small-text" id="backupInfo"></p>
+    <p class="pencil small-text">Your data is stored only on this device. Export saves a file you can keep somewhere safe (Files, iCloud Drive, email to yourself) and import on any device.</p>
   </section>
 </main>
 

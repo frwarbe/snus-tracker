@@ -23,6 +23,7 @@
   }
 
   let state = load();
+  L.setDayStart(state.settings.dayStart);
   let range = 30;
   try {
     range = Number(localStorage.getItem(RANGE_KEY)) || 30;
@@ -53,6 +54,7 @@
 
   function commit(next, message) {
     state = next;
+    L.setDayStart(state.settings.dayStart);
     save();
     render();
     if (message) toast(message);
@@ -90,14 +92,22 @@
     if (!fb.some((m) => m.level !== 'info') && s.limits.daily != null) {
       fb = [{ level: 'good', text: 'All within your limits.' }, ...fb];
     }
-    $('feedback').replaceChildren(
-      ...fb.map((m) => {
-        const li = el('li', { className: `note ${m.level}` });
-        li.innerHTML = ICONS[ICON_FOR[m.level]];
-        li.append(el('span', { textContent: m.text }));
-        return li;
-      })
-    );
+    const notes = fb.map((m) => {
+      const li = el('li', { className: `note ${m.level}` });
+      li.innerHTML = ICONS[ICON_FOR[m.level]];
+      li.append(el('span', { textContent: m.text }));
+      return li;
+    });
+    const bk = L.backupStatus(state, now);
+    if (bk.due) {
+      const li = el('li', { className: 'note info backup-note' });
+      li.innerHTML = ICONS.info;
+      const btn = el('button', { className: 'btn small', type: 'button', textContent: 'Back up now' });
+      btn.addEventListener('click', exportBackup);
+      li.append(el('span', { textContent: bk.last ? `Last backup was ${bk.days} days ago.` : "You haven't backed up yet. Your data lives only on this phone." }), btn);
+      notes.push(li);
+    }
+    $('feedback').replaceChildren(...notes);
 
     // Progress
     $('progress').replaceChildren(
@@ -131,33 +141,69 @@
     const todays = L.entriesBetween(state.entries, p.from, p.to).slice().reverse();
     $('todayList').replaceChildren(
       ...(todays.length
-        ? todays.map((e) => {
-            const time = el('input', { type: 'time', className: 'entry-time' });
-            time.setAttribute('aria-label', 'Time of lip pillow');
-            time.value = `${pad(new Date(e.t).getHours())}:${pad(new Date(e.t).getMinutes())}`;
-            time.addEventListener('change', () => {
-              if (!time.value) return;
-              const [h, m] = time.value.split(':').map(Number);
-              const d = new Date(e.t);
-              d.setHours(h, m, 0, 0);
-              commit(L.updateEntryTime(state, e.id, +d), 'Time updated');
-            });
-            const del = el('button', { className: 'del', textContent: 'Delete', type: 'button' });
-            del.setAttribute('aria-label', `Delete lip pillow at ${fmtTime(e.t)}`);
-            del.addEventListener('click', () => {
-              if (e.id === askFor) hideActivityAsk();
-              commit(L.removeEntry(state, e.id), 'Lip pillow deleted');
-            });
-            return el('li', {}, time, activitySelect(e), del);
-          })
+        ? todays.map(entryRow)
         : [el('li', { className: 'empty', textContent: 'Nothing yet today.' })])
     );
 
+    renderUsage(now);
     renderChart(now);
     renderActivities(now);
     renderTimeOfDay(now);
     renderHistory(now);
     renderLimits(now);
+  }
+
+  // One lip pillow: editable time, activity, delete. Used for today and for past days.
+  function entryRow(e) {
+    const time = el('input', { type: 'time', className: 'entry-time' });
+    time.setAttribute('aria-label', 'Time of lip pillow');
+    time.value = `${pad(new Date(e.t).getHours())}:${pad(new Date(e.t).getMinutes())}`;
+    time.addEventListener('change', () => {
+      if (!time.value) return;
+      const [h, m] = time.value.split(':').map(Number);
+      const t = +L.timeInDay(L.startOfDay(e.t), h, m);
+      if (t > Date.now()) { toast("That time hasn't happened yet"); return render(); }
+      commit(L.updateEntryTime(state, e.id, t), 'Time updated');
+    });
+    const del = el('button', { className: 'del', textContent: 'Delete', type: 'button' });
+    del.setAttribute('aria-label', `Delete lip pillow at ${fmtTime(e.t)}`);
+    del.addEventListener('click', () => {
+      if (e.id === askFor) askFor = null;
+      commit(L.removeEntry(state, e.id), 'Lip pillow deleted');
+    });
+    return el('li', {}, time, activitySelect(e), del);
+  }
+
+  function renderUsage(now) {
+    const st = state.settings;
+    const u = L.usage(state, now);
+    const money = (n) => L.formatMoney(n, st.currency);
+    const box = $('usage');
+    if (u.costPer == null && u.today.mg == null) {
+      const go = el('button', { className: 'btn small', type: 'button', textContent: 'Add strength & price' });
+      go.addEventListener('click', () => $('pillow').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      return box.replaceChildren(
+        el('p', { className: 'pencil', textContent: 'Add your strength (mg) and tin price to see how much nicotine you take and what it costs.' }), go);
+    }
+    const tiles = [];
+    const tile = (label, value, sub) => el('div', { className: 'tile' },
+      el('span', { className: 'tile-label', textContent: label }),
+      el('span', { className: 'tile-value', textContent: value }),
+      sub ? el('span', { className: 'tile-sub', textContent: sub }) : '');
+    if (u.today.mg != null) {
+      tiles.push(tile('Nicotine today', `${Math.round(u.today.mg * 10) / 10} mg`,
+        `avg ${Math.round(u.avg.mg)} mg/day`));
+    }
+    if (u.costPer != null) {
+      tiles.push(tile('Spent today', money(u.today.cost), `${money(u.costPer)} each`));
+      tiles.push(tile('This week', money(u.week.cost)));
+      tiles.push(tile('This month', money(u.month.cost), `${(Math.round(u.tinsMonth * 10) / 10).toString()} tins`));
+      tiles.push(tile('Per year at this pace', money(u.yearlyCost), `based on the last ${u.avg.days} day${u.avg.days === 1 ? '' : 's'}`));
+    }
+    if (u.today.mg != null && u.week.mg != null) {
+      tiles.push(tile('Nicotine this week', `${Math.round(u.week.mg)} mg`));
+    }
+    box.replaceChildren(el('div', { className: 'tiles' }, ...tiles));
   }
 
   function renderChart(now) {
@@ -327,28 +373,82 @@
     columns('timeOfDay', L.BUCKETS.map((b) => ({ name: names[b], count: counts[b] })), 'Nothing logged yet');
   }
 
+  // Which past day is open for editing (its day key), if any.
+  let openDay = null;
+
   function renderHistory(now) {
     const limit = state.settings.daily;
     const days = L.dailySeries(state.entries, now, 30).reverse().slice(1); // skip today
-    const all = state.entries.length ? days.filter((d) => d.date >= L.startOfDay(state.entries[0].t)) : [];
-    const shown = showAllHistory ? all : all.slice(0, 3);
-    $('history').replaceChildren(
-      ...(shown.length
-        ? shown.map((d) => {
-            const over = limit != null && d.count > limit;
-            const mark = limit == null ? '' : over ? `over by ${d.count - limit}` : 'within limit';
-            return el('li', { className: 'hist-row' + (over ? ' over' : '') },
-              el('span', { className: 'hist-day', textContent: d.date.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) }),
-              el('span', { className: 'hist-count', textContent: d.count }),
-              el('span', { className: 'hist-mark', textContent: mark }));
-          })
-        : [el('li', { className: 'empty', textContent: 'No past days yet.' })])
-    );
+    // Always include yesterday, so a forgotten lip pillow can be added even before your first one.
+    const yesterday = L.addDays(L.startOfDay(now), -1);
+    const first = state.entries.length ? L.startOfDay(state.entries[0].t) : yesterday;
+    const all = days.filter((d) => d.date >= (first < yesterday ? first : yesterday));
+    let shown = showAllHistory ? all : all.slice(0, 3);
+    if (openDay && !shown.some((d) => d.key === openDay)) openDay = null;
+    const items = [];
+    for (const d of shown) {
+      const over = limit != null && d.count > limit;
+      const mark = limit == null ? '' : over ? `over by ${d.count - limit}` : 'within limit';
+      const open = openDay === d.key;
+      const row = el('li', { className: 'hist-row' + (over ? ' over' : '') + (open ? ' open' : '') },
+        el('span', { className: 'hist-day', textContent: d.date.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) }),
+        el('span', { className: 'hist-count', textContent: d.count }),
+        el('span', { className: 'hist-mark', textContent: mark }),
+        el('span', { className: 'hist-chev', textContent: open ? '▾' : '▸' }));
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-expanded', String(open));
+      const toggle = () => { openDay = open ? null : d.key; renderHistory(new Date()); };
+      row.addEventListener('click', toggle);
+      row.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); } });
+      items.push(row);
+      if (open) items.push(dayEditor(d.date));
+    }
+    $('history').replaceChildren(...(items.length ? items : [el('li', { className: 'empty', textContent: 'No past days yet.' })]));
     $('moreHistory').hidden = all.length <= 3;
     $('moreHistory').textContent = showAllHistory ? 'Show less' : `Show more (${all.length - 3})`;
   }
 
+  // Lets you add, re-time, tag or delete lip pillows on a past day.
+  function dayEditor(dayStart) {
+    const entries = L.entriesBetween(state.entries, dayStart, L.addDays(dayStart, 1)).slice().reverse();
+    const list = el('ul', { className: 'ruled day-list' }, ...entries.map(entryRow));
+    const time = el('input', { type: 'time', className: 'field' });
+    time.setAttribute('aria-label', 'Time of the lip pillow to add');
+    time.value = '12:00';
+    const add = el('button', { className: 'btn small', type: 'button', textContent: '+ Add lip pillow' });
+    add.addEventListener('click', () => {
+      if (!time.value) return toast('Pick a time');
+      const [h, m] = time.value.split(':').map(Number);
+      const t = +L.timeInDay(dayStart, h, m);
+      if (t > Date.now()) return toast("That time hasn't happened yet");
+      commit(L.addEntry(state, t, { c: Date.now(), mg: state.settings.mg }),
+        `Added to ${dayStart.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}`);
+    });
+    return el('li', { className: 'day-edit' }, list, el('div', { className: 'day-add' }, time, add));
+  }
+
+  function renderSettings() {
+    const s = state.settings;
+    // Don't overwrite what the user is typing.
+    if (!$('pillow').contains(document.activeElement)) {
+      $('setMg').value = s.mg ?? '';
+      $('setPrice').value = s.tinPrice ?? '';
+      $('setPerTin').value = s.perTin ?? '';
+      $('setCurrency').value = s.currency || '';
+    }
+    $('setDayStart').value = String(s.dayStart || 0);
+    const per = L.costPerPillow(s);
+    $('setPriceHint').textContent = per == null ? '' : `= ${L.formatMoney(per, s.currency)} each`;
+    const bk = L.backupStatus(state, new Date());
+    $('backupInfo').textContent = s.lastBackup
+      ? `Last backup: ${new Date(s.lastBackup).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}` +
+        (bk.days != null ? ` (${bk.days === 0 ? 'today' : `${bk.days} day${bk.days === 1 ? '' : 's'} ago`})` : '')
+      : 'No backup yet.';
+  }
+
   function renderLimits(now) {
+    renderSettings();
     const s = state.settings;
     const autoW = s.daily != null ? s.daily * 7 : null;
     const autoM = s.daily != null ? s.daily * L.daysInMonth(now) : null;
@@ -415,7 +515,7 @@
   function logAt(t) {
     const before = new Set(L.feedback(state, new Date()).map((m) => m.text));
     const oldIds = new Set(state.entries.map((e) => e.id));
-    const next = L.addEntry(state, t);
+    const next = L.addEntry(state, t, { c: Date.now(), mg: state.settings.mg });
     const added = next.entries.find((e) => !oldIds.has(e.id));
     askFor = added ? added.id : null;
     const msg = L.feedback(next, new Date()).find((m) => !before.has(m.text) && m.level !== 'info');
@@ -440,8 +540,7 @@
     if (!timeChanged) return logAt(Date.now());
     if (!$('logTime').value) return toast('Pick a time');
     const [h, m] = $('logTime').value.split(':').map(Number);
-    const d = new Date();
-    d.setHours(h, m, 0, 0);
+    const d = L.timeInDay(L.startOfDay(new Date()), h, m);
     if (+d > Date.now()) return toast("That time hasn't happened yet");
     logAt(+d);
     timeChanged = false;
@@ -450,7 +549,7 @@
   setInterval(syncLogTime, 15000);
   syncLogTime();
   $('undo').addEventListener('click', () => {
-    const last = state.entries[state.entries.length - 1];
+    const last = L.lastAdded(state.entries);
     if (last && last.id === askFor) askFor = null;
     if (last) commit(L.removeEntry(state, last.id), `Removed lip pillow from ${fmtTime(last.t)}`);
   });
@@ -476,21 +575,48 @@
     };
   }
   for (const id of ['limDaily', 'limWeekly', 'limMonthly']) {
-    $(id).addEventListener('input', () => commit({ ...state, settings: readLimits() }));
+    $(id).addEventListener('input', () => commit({ ...state, settings: { ...state.settings, ...readLimits() } }));
     $(id).addEventListener('change', () => toast('Limits saved'));
   }
   $('limits').addEventListener('submit', (e) => {
     e.preventDefault();
     document.activeElement.blur();
   });
-  $('export').addEventListener('click', () => {
+  // Settings for strength, price, currency and when the day starts.
+  $('setMg').addEventListener('input', () => {
+    const v = L.toNum($('setMg').value, 200);
+    if ($('setMg').value.trim() && v == null) return;
+    commit(L.setStrength(state, v));
+  });
+  for (const [id, key, conv] of [
+    ['setPrice', 'tinPrice', (v) => L.toNum(v, 100000)],
+    ['setPerTin', 'perTin', (v) => { const n = L.toLimit(v); return n && n >= 1 ? n : null; }],
+    ['setCurrency', 'currency', (v) => v.trim().slice(0, 5)],
+  ]) {
+    $(id).addEventListener('input', () => {
+      const raw = $(id).value;
+      const v = conv(raw);
+      if (key !== 'currency' && raw.trim() && v == null) return; // ignore half-typed numbers
+      commit({ ...state, settings: { ...state.settings, [key]: v } });
+    });
+  }
+  for (const id of ['setMg', 'setPrice', 'setPerTin', 'setCurrency']) $(id).addEventListener('change', () => toast('Saved'));
+  $('setDayStart').addEventListener('change', () => {
+    commit({ ...state, settings: { ...state.settings, dayStart: Number($('setDayStart').value) } }, 'Saved');
+  });
+  $('pillow').addEventListener('submit', (e) => { e.preventDefault(); document.activeElement.blur(); });
+
+  function exportBackup() {
+    commit({ ...state, settings: { ...state.settings, lastBackup: Date.now() } });
     const blob = new Blob([JSON.stringify({ app: 'snuswatch', version: 1, ...state }, null, 2)], { type: 'application/json' });
     const a = el('a', { href: URL.createObjectURL(blob), download: `snuswatch-${L.dayKey(new Date())}.json` });
     document.body.append(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
+    toast('Backup saved');
+  }
+  $('export').addEventListener('click', exportBackup);
   $('importBtn').addEventListener('click', () => $('importFile').click());
   $('importFile').addEventListener('change', async () => {
     const file = $('importFile').files[0];
@@ -515,7 +641,7 @@
   // Keep "x ago" and day rollover fresh.
   setInterval(render, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-  window.addEventListener('storage', (e) => { if (e.key === KEY) { state = load(); render(); } });
+  window.addEventListener('storage', (e) => { if (e.key === KEY) { state = load(); L.setDayStart(state.settings.dayStart); render(); } });
 
   render();
 

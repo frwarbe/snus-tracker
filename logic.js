@@ -3,10 +3,26 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
 
   // ---- Dates (all in the device's local time) ----
+  // A "day" can start later than midnight (e.g. 4am), so a late night counts towards the day before.
+  let DAY_START_H = 0;
+  function setDayStart(h) {
+    const n = Math.floor(Number(h));
+    DAY_START_H = Number.isFinite(n) && n >= 0 && n <= 6 ? n : 0;
+  }
+  function getDayStart() {
+    return DAY_START_H;
+  }
   function startOfDay(d) {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
+    const x = new Date(+new Date(d) - DAY_START_H * 3600000);
+    x.setHours(DAY_START_H, 0, 0, 0);
     return x;
+  }
+  // A clock time (h:m) inside the day that starts at `dayStart` (times before the day's start
+  // hour belong to the early hours of the next calendar date).
+  function timeInDay(dayStart, h, m) {
+    const x = new Date(dayStart);
+    x.setHours(h, m, 0, 0);
+    return x < dayStart ? addDays(x, 1) : x;
   }
   function addDays(d, n) {
     const x = new Date(d);
@@ -24,7 +40,8 @@
     return x;
   }
   function daysInMonth(d) {
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const x = startOfDay(d);
+    return new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
   }
   function dayKey(d) {
     const x = new Date(d);
@@ -34,8 +51,39 @@
   }
 
   // ---- State ----
+  const DEFAULT_SETTINGS = {
+    daily: null, weekly: null, monthly: null,
+    dayStart: 0,          // hour the day starts (0-6)
+    mg: null,             // nicotine per lip pillow, mg
+    tinPrice: null,       // price of one tin
+    perTin: null,         // lip pillows per tin (20 when not set)
+    currency: '',         // shown with money, e.g. "kr", "£"
+    lastBackup: null,     // when you last exported
+  };
   function emptyState() {
-    return { settings: { daily: null, weekly: null, monthly: null }, entries: [] };
+    return { settings: { ...DEFAULT_SETTINGS }, entries: [] };
+  }
+
+  // A positive (or zero) number, optionally with decimals and a maximum; otherwise null.
+  function toNum(v, max = Infinity) {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(String(v).replace(',', '.'));
+    return Number.isFinite(n) && n >= 0 && n <= max ? n : null;
+  }
+  function cleanSettings(s) {
+    s = s || {};
+    const perTin = toLimit(s.perTin);
+    return {
+      daily: toLimit(s.daily),
+      weekly: toLimit(s.weekly),
+      monthly: toLimit(s.monthly),
+      dayStart: (() => { const n = Math.floor(Number(s.dayStart)); return n >= 0 && n <= 6 ? n : 0; })(),
+      mg: toNum(s.mg, 200),
+      tinPrice: toNum(s.tinPrice, 100000),
+      perTin: perTin && perTin >= 1 ? perTin : null,
+      currency: typeof s.currency === 'string' ? s.currency.trim().slice(0, 5) : '',
+      lastBackup: Number.isFinite(Number(s.lastBackup)) && s.lastBackup !== null && s.lastBackup !== '' ? Number(s.lastBackup) : null,
+    };
   }
 
   function toLimit(v) {
@@ -57,13 +105,13 @@
         const out = { id: String(e.id || newId(e.t)), t: Number(e.t) };
         const a = cleanActivity(e.activity);
         if (a) out.activity = a;
+        if (Number.isFinite(Number(e.c)) && e.c !== null) out.c = Number(e.c);
+        const mg = toNum(e.mg, 200);
+        if (mg) out.mg = mg;
         return out;
       })
       .sort((a, b) => a.t - b.t);
-    return {
-      settings: { daily: toLimit(s.daily), weekly: toLimit(s.weekly), monthly: toLimit(s.monthly) },
-      entries,
-    };
+    return { settings: cleanSettings(s), entries };
   }
 
   let idCounter = 0;
@@ -72,9 +120,27 @@
     return `${Number(t).toString(36)}-${idCounter.toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
-  function addEntry(state, t) {
-    const entries = state.entries.concat({ id: newId(t), t: Number(t) }).sort((a, b) => a.t - b.t);
+  // `opts.c`: when it was logged (for Undo); `opts.mg`: strength at the time.
+  function addEntry(state, t, opts = {}) {
+    const e = { id: newId(t), t: Number(t), c: Number.isFinite(opts.c) ? opts.c : Number(t) };
+    if (opts.mg) e.mg = opts.mg;
+    const entries = state.entries.concat(e).sort((a, b) => a.t - b.t);
     return { ...state, entries };
+  }
+  // The entry you logged most recently (not necessarily the latest time).
+  function lastAdded(entries) {
+    let best = null;
+    for (const e of entries) {
+      const k = e.c ?? e.t;
+      if (!best || k > (best.c ?? best.t) || (k === (best.c ?? best.t) && e.t > best.t)) best = e;
+    }
+    return best;
+  }
+  // Change the strength setting. Lip pillows logged before keep the old strength.
+  function setStrength(state, mg) {
+    const old = state.settings.mg;
+    const entries = old ? state.entries.map((e) => (e.mg ? e : { ...e, mg: old })) : state.entries;
+    return { ...state, entries, settings: { ...state.settings, mg: toNum(mg, 200) } };
   }
   // ---- Activities (optional "what were you doing?") ----
   const ACTIVITIES = [
@@ -207,7 +273,7 @@
     return {
       day: { from: day, to: addDays(day, 1) },
       week: { from: week, to: addDays(week, 7) },
-      month: { from: month, to: new Date(month.getFullYear(), month.getMonth() + 1, 1) },
+      month: { from: month, to: (() => { const x = new Date(month); x.setMonth(x.getMonth() + 1); return x; })() },
     };
   }
 
@@ -313,6 +379,62 @@
     return `${m}m`;
   }
 
+  // ---- Money and nicotine ----
+  function costPerPillow(settings) {
+    if (settings.tinPrice == null) return null;
+    return settings.tinPrice / (settings.perTin || 20);
+  }
+  function usage(state, now) {
+    const st = state.settings;
+    const per = costPerPillow(st);
+    const mgOf = (e) => e.mg || st.mg || 0;
+    const anyMg = !!st.mg || state.entries.some((e) => e.mg);
+    const agg = (list) => ({
+      count: list.length,
+      mg: anyMg ? list.reduce((a, e) => a + mgOf(e), 0) : null,
+      cost: per == null ? null : list.length * per,
+    });
+    const p = periods(now);
+    const today = agg(entriesBetween(state.entries, p.day.from, p.day.to));
+    const week = agg(entriesBetween(state.entries, p.week.from, p.week.to));
+    const month = agg(entriesBetween(state.entries, p.month.from, p.month.to));
+    // Daily average over the last 30 days (or since you started, if sooner).
+    const end = addDays(startOfDay(now), 1);
+    let from = addDays(startOfDay(now), -29);
+    if (state.entries.length && startOfDay(state.entries[0].t) > from) from = startOfDay(state.entries[0].t);
+    const days = Math.max(1, Math.round((end - from) / DAY_MS));
+    const recent = agg(entriesBetween(state.entries, from, end));
+    const avg = {
+      days,
+      count: recent.count / days,
+      mg: recent.mg == null ? null : recent.mg / days,
+      cost: recent.cost == null ? null : recent.cost / days,
+    };
+    return {
+      today, week, month, avg,
+      yearlyCost: avg.cost == null ? null : avg.cost * 365,
+      tinsMonth: month.count / (st.perTin || 20),
+      total: agg(state.entries),
+      costPer: per,
+    };
+  }
+  function formatMoney(n, currency) {
+    const v = (Math.round(n * 100) / 100).toFixed(2);
+    const c = (currency || '').trim();
+    if (!c) return v;
+    return /^[A-Za-z]{2,}$/.test(c) ? `${v} ${c}` : `${c}${v}`;
+  }
+
+  // ---- Backup reminder ----
+  // Due once you have a few entries and haven't exported for 7+ days.
+  function backupStatus(state, now) {
+    const last = state.settings.lastBackup;
+    if (state.entries.length < 5) return { due: false, last, days: null };
+    const ref = last ?? state.entries[0].t;
+    const days = Math.floor((+now - ref) / DAY_MS);
+    return { due: days >= 7, last, days };
+  }
+
   // ---- Feedback ----
   const PERIOD_WORD = { day: 'today', week: 'this week', month: 'this month' };
   const LIMIT_WORD = { day: "today's", week: "this week's", month: "this month's" };
@@ -350,6 +472,18 @@
 
   const api = {
     DAY_MS,
+    DEFAULT_SETTINGS,
+    setDayStart,
+    getDayStart,
+    timeInDay,
+    toNum,
+    cleanSettings,
+    lastAdded,
+    setStrength,
+    usage,
+    costPerPillow,
+    formatMoney,
+    backupStatus,
     BUCKETS,
     startOfDay,
     startOfWeek,
