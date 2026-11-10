@@ -203,7 +203,8 @@
     if (u.today.mg != null && u.week.mg != null) {
       tiles.push(tile('Nicotine this week', `${Math.round(u.week.mg)} mg`));
     }
-    box.replaceChildren(el('div', { className: 'tiles' }, ...tiles));
+    box.replaceChildren(el('div', { className: 'tiles' }, ...tiles),
+      u.today.mg != null ? el('p', { className: 'pencil small-text', textContent: 'Nicotine is based on pouch strength, not nicotine absorbed.' }) : '');
   }
 
   function renderChart(now) {

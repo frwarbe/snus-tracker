@@ -10,7 +10,7 @@ A standalone tracker for lip pillows (nicotine pouches). No AI, no server, no ac
 - **Time:** time of your last lip pillow and how long ago it was, plus a morning/afternoon/evening/night breakdown for the last 30 days.
 - **Trend graph:** lip pillows per day over the last 7, 30 or 90 days, with your daily limit as a dashed line. Days over the limit are marked in red.
 - **History:** the last 30 days, each marked as within the limit or over it.
-- **Money & nicotine:** set your strength (mg), tin price, lip pillows per tin and currency, and see nicotine today and per day, what you spend today, this week and this month, tins used, and a yearly estimate at your current pace. Changing the strength keeps the old strength on lip pillows you already logged.
+- **Money & nicotine:** set your strength (mg), tin price, lip pillows per tin and currency, and see nicotine today and per day, what you spend today, this week and this month, tins used, and a yearly estimate at your current pace. Changing the strength keeps the old strength on lip pillows you already logged. Nicotine is based on pouch strength, not nicotine absorbed.
 - **Edit past days:** tap a day in History to add a forgotten lip pillow, change a time, tag it or delete it. Yesterday is always there.
 - **Day starts at:** choose midnight to 6am, so late nights count towards the day before.
 - **Backup reminder:** if you haven't exported for 7 days, a note with a "Back up now" button appears. The Backup section shows when you last backed up.
