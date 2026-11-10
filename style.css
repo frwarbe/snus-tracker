@@ -334,6 +334,7 @@ input[type=time].field { width: 8.5em; }
 .tile-label { font-size: 12.5px; color: var(--pencil); }
 .tile-value { font: 600 22px/1.2 var(--head); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .tile-sub { font-size: 12px; color: var(--pencil); }
+#mgAll { margin-top: 10px; }
 .hist-hint { margin: -6px 0 6px; }
 .hist-row { cursor: pointer; }
 .hist-row.open { border-bottom-color: transparent; }

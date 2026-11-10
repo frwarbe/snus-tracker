@@ -266,3 +266,13 @@ test('imported backups keep the new settings and per-entry details', () => {
   assert.equal(s.settings.lastBackup, 123);
   assert.deepEqual([s.entries[0].c, s.entries[0].mg], [20, 4]);
 });
+
+test('applying the current strength to every lip pillow', () => {
+  let s = withEntries([at(2026, 11, 4, 8), at(2026, 11, 4, 9)], { mg: 10 });
+  s = { ...s, entries: s.entries.map((e) => ({ ...e, mg: 1 })) }; // e.g. wrongly saved earlier
+  s = L.applyStrengthToAll(s);
+  assert.deepEqual(s.entries.map((e) => e.mg), [10, 10]);
+  assert.equal(L.usage(s, new Date(2026, 10, 4, 20)).today.mg, 20);
+  const none = L.applyStrengthToAll({ ...s, settings: { ...s.settings, mg: null } });
+  assert.equal(none.entries.some((e) => 'mg' in e), false);
+});

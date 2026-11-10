@@ -439,6 +439,8 @@
       $('setCurrency').value = s.currency || '';
     }
     $('setDayStart').value = String(s.dayStart || 0);
+    $('mgAll').hidden = !s.mg || !state.entries.length;
+    $('mgAll').textContent = `Use ${s.mg ?? ''} mg for all past lip pillows`;
     const per = L.costPerPillow(s);
     $('setPriceHint').textContent = per == null ? '' : `= ${L.formatMoney(per, s.currency)} each`;
     const bk = L.backupStatus(state, new Date());
@@ -584,10 +586,26 @@
     document.activeElement.blur();
   });
   // Settings for strength, price, currency and when the day starts.
+  // Strength: while you type, numbers update as a preview only. When you finish (leave the
+  // box), the new strength is saved and lip pillows logged before keep the strength they had.
+  // (Saving on every key press used to lock past ones in at a half-typed value, e.g. "1" of "10".)
+  let mgBefore = state.settings.mg;
+  $('setMg').addEventListener('focus', () => { mgBefore = state.settings.mg; });
   $('setMg').addEventListener('input', () => {
     const v = L.toNum($('setMg').value, 200);
     if ($('setMg').value.trim() && v == null) return;
-    commit(L.setStrength(state, v));
+    commit({ ...state, settings: { ...state.settings, mg: v } });
+  });
+  $('setMg').addEventListener('change', () => {
+    const v = state.settings.mg;
+    commit(L.setStrength({ ...state, settings: { ...state.settings, mg: mgBefore } }, v), 'Saved');
+    mgBefore = v;
+  });
+  $('mgAll').addEventListener('click', () => {
+    const mg = state.settings.mg;
+    if (!mg) return toast('Set a strength first');
+    if (!confirm(`Count every lip pillow you've logged as ${mg} mg?`)) return;
+    commit(L.applyStrengthToAll(state), `All lip pillows now ${mg} mg`);
   });
   for (const [id, key, conv] of [
     ['setPrice', 'tinPrice', (v) => L.toNum(v, 100000)],
@@ -601,7 +619,7 @@
       commit({ ...state, settings: { ...state.settings, [key]: v } });
     });
   }
-  for (const id of ['setMg', 'setPrice', 'setPerTin', 'setCurrency']) $(id).addEventListener('change', () => toast('Saved'));
+  for (const id of ['setPrice', 'setPerTin', 'setCurrency']) $(id).addEventListener('change', () => toast('Saved'));
   $('setDayStart').addEventListener('change', () => {
     commit({ ...state, settings: { ...state.settings, dayStart: Number($('setDayStart').value) } }, 'Saved');
   });

@@ -136,6 +136,15 @@
     }
     return best;
   }
+  // Use the current strength for every lip pillow, past ones included.
+  function applyStrengthToAll(state) {
+    const mg = state.settings.mg;
+    const entries = state.entries.map((e) => {
+      const { mg: _old, ...rest } = e;
+      return mg ? { ...rest, mg } : rest;
+    });
+    return { ...state, entries };
+  }
   // Change the strength setting. Lip pillows logged before keep the old strength.
   function setStrength(state, mg) {
     const old = state.settings.mg;
@@ -480,6 +489,7 @@
     cleanSettings,
     lastAdded,
     setStrength,
+    applyStrengthToAll,
     usage,
     costPerPillow,
     formatMoney,
